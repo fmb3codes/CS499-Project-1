@@ -16,6 +16,10 @@ typedef struct img_info {
 
 img_info *buffer;
 
+void read_image_data(char* file_format, char* input_file_name);
+
+void write_image_data(char* file_format, char* output_file_name);
+
 //REMEMBER to go through and add error checking for incorrect file type/argument size/etc
 int main(int argc, char** argv)
 {

@@ -10,6 +10,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef struct img_info {
+  unsigned char* info;
+} img_info;
+
+img_info *buffer;
 
 int main(int argc, char** argv)
 {
@@ -19,9 +24,11 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	
-    char *filetype = argv[1];
+	char *filetype = argv[1];
 	char *inputname = argv[2];
 	char *outputname = argv[3];
+	
+	
 
 	
 	

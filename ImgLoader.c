@@ -117,16 +117,19 @@ void read_header_data(char* file_format, char* input_file_name)
 	int i = 0;
 
 	
-	while(c != ' ') // potentially change while loop to account for all white space
+	while(1)
 	{
 		printf("C is currently: %c\n", c);
-		if(c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		{
+			if(c == '#')
 			{
-			    temp[i++] = c;	
-                break;				
+			fgets(current_line, 1024, fp);
 			}
-			temp[i++] = c;
-            c = fgetc(fp);			
+			break;
+		}
+		temp[i++] = c;
+        c = fgetc(fp);			
 	}
 	
 	temp[i] = 0;
@@ -142,7 +145,7 @@ void read_header_data(char* file_format, char* input_file_name)
 	printf("size of file_format is: %d\n", strlen(buffer->file_format));
 	
     //printf("file_format equal to %d and %d and %d\n", strcmp(buffer->file_format, "P3"), strcmp(buffer->file_format, "P3\\"), strcmp(buffer->file_format, "P3\n"));
-	if((strcmp(buffer->file_format, "P3\n") != 0) && (strcmp(buffer->file_format, "P6\n") != 0) && (strcmp(buffer->file_format, "P3\r\n") != 0) && (strcmp(buffer->file_format, "P6\r\n") != 0) && (strcmp(buffer->file_format, "P3") != 0) && (strcmp(buffer->file_format, "P6") != 0))
+	if((strcmp(buffer->file_format, "P3") != 0) && (strcmp(buffer->file_format, "P6") != 0))
 	{
 		fprintf(stderr, "Error: Given file format is neither P3 nor P6.\n");
 		exit(1); // exits out of program due to error		
@@ -165,16 +168,19 @@ void read_header_data(char* file_format, char* input_file_name)
 			c = fgetc(fp);
 		}
 	}
-	while(c != ' ')
+	while(1)
 	{
 		printf("C is currently: %c\n", c);
-		if(c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		{
+			if(c == '#')
 			{
-			    temp[i++] = c;	
-                break;				
+			fgets(current_line, 1024, fp);
 			}
-		temp[i++] = c;		
-		c = fgetc(fp);
+			break;
+		}
+		temp[i++] = c;
+        c = fgetc(fp);			
 	}
 	
 	temp[i] = 0;
@@ -200,16 +206,19 @@ void read_header_data(char* file_format, char* input_file_name)
 			c = fgetc(fp);
 		}
 	}
-	while(c != ' ')
+	while(1)
 	{
 		printf("C is currently: %c\n", c);
-		if(c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		{
+			if(c == '#')
 			{
-			    temp[i++] = c;	
-                break;				
+			fgets(current_line, 1024, fp);
 			}
-		temp[i++] = c;		
-		c = fgetc(fp);
+			break;
+		}
+		temp[i++] = c;
+        c = fgetc(fp);			
 	}
 	
 	temp[i] = 0;
@@ -242,17 +251,19 @@ void read_header_data(char* file_format, char* input_file_name)
 			c = fgetc(fp);
 		}
 	}
-	while(c != ' ')
+	while(1)
 	{
 		printf("C is currently: %c\n", c);
-		if(c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		{
+			if(c == '#')
 			{
-			    temp[i++] = c;	
-                break;				
+			fgets(current_line, 1024, fp);
 			}
+			break;
+		}
 		temp[i++] = c;
-		c = fgetc(fp);
-			
+        c = fgetc(fp);			
 	}
 	
 	temp[i] = 0;

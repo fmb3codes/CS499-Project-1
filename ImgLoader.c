@@ -9,19 +9,20 @@
 // pre-processor directives
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct pixel_data {
-  unsigned char* file_format;
-  unsigned char* file_comment;
-  unsigned char* file_height;
-  unsigned char* file_width;
-  unsigned char* file_maxcolor;
+  char* file_format;
+  char* file_comment;
+  char* file_height;
+  char* file_width;
+  char* file_maxcolor;
   void* file_data;
 } pixel_data;
 
 pixel_data *buffer;
 
-void read_header_data(char* file_format, char* input_file_name, pixel_data* file_buffer);
+void read_header_data(char* file_format, char* input_file_name);
 
 void read_image_data(char* file_format, char* input_file_name);
 
@@ -69,11 +70,16 @@ int main(int argc, char** argv)
 	
 	printf("Buffer hasn't been properly allocated memory yet and buffer size is: %d\n", sizeof(buffer));
 	
-	buffer = (struct img_info*)malloc(sizeof(struct img_info)); // allocates memory to struct pointer
-	buffer->info = (unsigned char *)malloc(filesize);
+	buffer = (struct pixel_data*)malloc(sizeof(struct pixel_data)); // allocates memory to struct pointer
+	buffer->file_data = (unsigned char *)malloc(filesize);
+	buffer->file_format = (char *)malloc(3);
+	buffer->file_comment = (char *)malloc(1024);
+	buffer->file_height = (char *)malloc(100);
+	buffer->file_width = (char *)malloc(100);
+	buffer->file_maxcolor = (char *)malloc(100);
 	
 	// Potentially remove this
-	if(buffer == NULL || buffer->info == NULL)
+	if(buffer == NULL || buffer->file_data == NULL || buffer->file_format == NULL || buffer->file_comment == NULL || buffer->file_height == NULL || buffer->file_width == NULL || buffer->file_maxcolor == NULL)
 	{
 		fprintf(stderr, "Error: Buffer wasn't properly allocated memory.\n");
 		return -1;
@@ -81,11 +87,11 @@ int main(int argc, char** argv)
 	
 	printf("Buffer has been properly allocated memory and buffer size is: %d\n", sizeof(buffer));
 	
-	read_header_data(filetype, inputname, buffer);
+	read_header_data(filetype, inputname);
 	
 }
 
-void read_header_data(char* file_format, char* input_file_name, pixel_data* file_buffer)
+void read_header_data(char* file_format, char* input_file_name)
 {
 	
 }

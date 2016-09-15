@@ -24,7 +24,7 @@ pixel_data *buffer;
 
 void read_header_data(char* file_format, char* input_file_name);
 
-void read_image_data(char* file_format, char* input_file_name);
+void read_image_data(char* file_format, char* input_file_name, int file_size);
 
 void write_image_data(char* file_format, char* output_file_name);
 
@@ -89,8 +89,8 @@ int main(int argc, char** argv)
 	printf("Buffer has been properly allocated memory and buffer size is: %d\n", sizeof(buffer));
 	
 	read_header_data(filetype, inputname);
-	read_image_data(filetype, inputname);
-	write_image_data(filetype, outputname);
+	//read_image_data(filetype, inputname, filesize);
+	//write_image_data(filetype, outputname);
 	
 	return 0;
 	
@@ -111,127 +111,167 @@ void read_header_data(char* file_format, char* input_file_name)
 	}
 	
 	char* current_line;
-	
-	printf("Getting to this point and file_format is: %s okay\n", file_format);
-
-	//fgets(current_line, 1024, fp);
-	
-	//printf("Current line is %s and length is %d\n", current_line, strlen(current_line));
-	
-	printf("Passed fgets\n");
-	//printf("About to read file format into buffer:%s\n", current_line);
-	
-	printf("Current stored buffer file format is: %s\n", buffer->file_format);
-	
-	
-	strcpy(buffer->file_format, fgets(current_line, 1024, fp));
-	
-	//(*buffer).file_format = (unsigned char *)malloc(3);
-	
-	printf("Current stored buffer file format is: %s\n", buffer->file_format);
-	printf("Current line is %s and length is %d\n", current_line, strlen(current_line));
+	current_line = (char *)malloc(1500);
+	char temp[64] = {0};
+	int c = fgetc(fp);
+	int i = 0;
 
 	
-	//buffer->file_format = fgets(current_line, 1024, fp); // stores file format 
-	
-	if(strcmp(buffer->file_format, "P3\n") == 0)
+	while(c != ' ') // potentially change while loop to account for all white space
 	{
-		printf("Yes the formats are equal\n");
+		printf("C is currently: %c\n", c);
+		if(c == '\n')
+			{
+			    temp[i++] = c;	
+                break;				
+			}
+			temp[i++] = c;
+            c = fgetc(fp);			
 	}
-
+	
+	temp[i] = 0;
+	strcpy(buffer->file_format, temp);
+	memset(temp, 0, 64);
+	
+	
+	printf("file format is: %s\n", buffer->file_format);
+	
+	if(strcmp(buffer->file_format, "P3\r\n") == 0)
+		printf("They're equal\n");
+	
+	printf("size of file_format is: %d\n", strlen(buffer->file_format));
 	
     //printf("file_format equal to %d and %d and %d\n", strcmp(buffer->file_format, "P3"), strcmp(buffer->file_format, "P3\\"), strcmp(buffer->file_format, "P3\n"));
-	if((strcmp(buffer->file_format, "P3\n") != 0) && (strcmp(buffer->file_format, "P6\n") != 0))
+	if((strcmp(buffer->file_format, "P3\n") != 0) && (strcmp(buffer->file_format, "P6\n") != 0) && (strcmp(buffer->file_format, "P3\r\n") != 0) && (strcmp(buffer->file_format, "P6\r\n") != 0) && (strcmp(buffer->file_format, "P3") != 0) && (strcmp(buffer->file_format, "P6") != 0))
 	{
 		fprintf(stderr, "Error: Given file format is neither P3 nor P6.\n");
 		exit(1); // exits out of program due to error		
 	}
 	
 	
-	 fgets(current_line, 1024, fp);
-	 
-	 printf("Current_line contains: %s\n", current_line);
-	 
-	 int is_comment = 1;
-	 
-	 //checks for comment
-	 if(*current_line == '#')
-	 {
-		strcpy(buffer->file_comment, current_line);
-		is_comment = 0;
-		
-		fgets(current_line, 1024, fp);
-		 
-		char* width_and_height = strtok(current_line, " ");
-		
-		int width = atoi(width_and_height);
-		strcpy(buffer->file_width, width_and_height);
-		printf("Current width is: %d\n",width);
-		
-		width_and_height = strtok(NULL, " ");
-		
-		int height = atoi(width_and_height);
-		strcpy(buffer->file_height, width_and_height);
-		printf("Current height is: %d\n", height);
-		
-		if(height < 0 || width < 0)
+	// file width
+	i = 0;
+	c = fgetc(fp);
+	printf("Is c a comment? %c\n", c);
+	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9'))
+	{
+		if(c == '#')
+		{
+			fgets(current_line, 1024, fp);
+		    c = fgetc(fp);
+		}
+		else
+		{
+			c = fgetc(fp);
+		}
+	}
+	while(c != ' ')
+	{
+		printf("C is currently: %c\n", c);
+		if(c == '\n')
+			{
+			    temp[i++] = c;	
+                break;				
+			}
+		temp[i++] = c;		
+		c = fgetc(fp);
+	}
+	
+	temp[i] = 0;
+	strcpy(buffer->file_width, temp);
+	int width = atoi(temp);
+	printf("File width is: %d\n", width);
+	memset(temp, 0, 64);
+	
+	
+	
+	// file height
+	i = 0;
+	c = fgetc(fp);
+	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9'))
+	{
+		if(c == '#')
+		{
+			fgets(current_line, 1024, fp);
+		    c = fgetc(fp);
+		}
+		else
+		{
+			c = fgetc(fp);
+		}
+	}
+	while(c != ' ')
+	{
+		printf("C is currently: %c\n", c);
+		if(c == '\n')
+			{
+			    temp[i++] = c;	
+                break;				
+			}
+		temp[i++] = c;		
+		c = fgetc(fp);
+	}
+	
+	temp[i] = 0;
+	strcpy(buffer->file_height, temp);
+	int height = atoi(temp);
+	printf("File height is: %d\n", height);
+	memset(temp, 0, 64);
+	
+	
+	if(height < 0 || width < 0)
 		{
 			fprintf(stderr, "Error: Invalid height or width.\n");
 		    exit(1); // exits out of program due to error
 		}
 		
-		strcpy(buffer->file_maxcolor, fgets(current_line, 1024, fp));
 		
-		if(atoi(current_line) < 0 || atoi(current_line) > 255)
+	
+    // max color
+	i = 0;
+	c = fgetc(fp);
+	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9')) // potentially remove non-digit checker
+	{
+		if(c == '#')
+		{
+			fgets(current_line, 1024, fp);
+		    c = fgetc(fp);
+		}
+		else
+		{
+			c = fgetc(fp);
+		}
+	}
+	while(c != ' ')
+	{
+		printf("C is currently: %c\n", c);
+		if(c == '\n')
+			{
+			    temp[i++] = c;	
+                break;				
+			}
+		temp[i++] = c;
+		c = fgetc(fp);
+			
+	}
+	
+	temp[i] = 0;
+	strcpy(buffer->file_maxcolor, temp);
+	int maxcolor = atoi(temp);
+	printf("File maxcolor is: %d\n", maxcolor);
+	memset(temp, 0, 64);
+	
+	if(maxcolor < 0 || maxcolor > 255)
 		{
 			fprintf(stderr, "Error: Max color value is off\n");
 		    exit(1); // exits out of program due to error	
 		}
-		
-		printf("Current max color value is: %d\n", atoi(current_line));
-		
-		printf("Max color value is of size (character): %d, (integer): %d, and length: %d\n", sizeof(current_line), sizeof(atoi(current_line)), strlen(current_line));
-		
-		
-	 }
-	 
-	 //evaluates if there was no comment, simply changing the flow of reading in each line (same process as above minus the comment read/assignment"
-	 if(is_comment == 1)
-	 {
-	    char* width_and_height = strtok(current_line, " ");
-		
-		int width = atoi(width_and_height);
-		strcpy(buffer->file_width, width_and_height);
-		printf("Current width is: %d\n",width);
-		
-		width_and_height = strtok(NULL, " ");
-		
-		int height = atoi(width_and_height);
-		strcpy(buffer->file_height, width_and_height);
-		printf("Current height is: %d\n", height);
-		
-		if(height < 0 || width < 0)
-		{
-			fprintf(stderr, "Error: Invalid height or width.\n");
-		    exit(1); // exits out of program due to error
-		}
-		
-		strcpy(buffer->file_maxcolor, fgets(current_line, 1024, fp));
-		
-		if(atoi(current_line) < 0 || atoi(current_line) > 255)
-		{
-			fprintf(stderr, "Error: Max color value is off\n");
-		    exit(1); // exits out of program due to error	
-		}
-		
-		printf("Current max color value is: %d\n", atoi(current_line));
-		
-	 }
+	
 	 
 	fclose(fp);
 }
 
-void read_image_data(char* file_format, char* input_file_name)
+void read_image_data(char* file_format, char* input_file_name, int file_size)
 {
 	FILE *fp;
 	
@@ -249,6 +289,7 @@ void read_image_data(char* file_format, char* input_file_name)
 	
 	printf("The current file format is %s\n", buffer->file_format);
 	
+	//TRY getc?
 	if(strcmp(buffer->file_format, "P3\n") == 0)
 	{
 		
@@ -284,7 +325,7 @@ void read_image_data(char* file_format, char* input_file_name)
 		fopen(input_file_name, "rb");
 		unsigned char * test;
 		test = (unsigned char *)calloc(1, sizeof(unsigned char));
-		fread(buffer->file_data, sizeof(unsigned char), 5000, fp); // CHANGE 5000 TO FILE SIZE
+		fread(buffer->file_data, sizeof(unsigned char), file_size, fp); // CHANGE 5000 TO FILE SIZE
 
 		printf("Final buffer is: %s\n", buffer->file_data);		
 		fclose(fp);
@@ -299,11 +340,14 @@ void read_image_data(char* file_format, char* input_file_name)
 
 void write_image_data(char* file_format, char* output_file_name)
 {
+	*(buffer->file_format + 1) = *(file_format + 1); // rewrites # in P# to match correct destination file format before writing out
+	printf("Getting to start\n");
 	FILE *fp;
 	
+	//printf("Output file name is: %s\n", output_file_name);
 	fp = fopen(output_file_name, "a"); // error checking around creating new file?
 	
-	printf("Output file name is: %s\n", output_file_name);
+	//printf("Output file name is: %s\n", output_file_name);
 	
 	if(fp == NULL) // CHANGE this?
 	{
@@ -317,7 +361,8 @@ void write_image_data(char* file_format, char* output_file_name)
 	
 	if(strcmp(file_format, "P3") == 0)
 	{	
-
+		printf("Printing P3 data\n");
+        fprintf(fp, buffer->file_data);
 
 		fclose(fp);
     }

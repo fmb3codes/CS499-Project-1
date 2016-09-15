@@ -90,6 +90,7 @@ int main(int argc, char** argv)
 	
 	read_header_data(filetype, inputname);
 	read_image_data(filetype, inputname);
+	write_image_data(filetype, outputname);
 	
 	return 0;
 	
@@ -291,12 +292,48 @@ void read_image_data(char* file_format, char* input_file_name)
 	
 	else
 	{
-		fprintf(stderr, "Error: File format not recognized\n");
+		fprintf(stderr, "Error: File format to read in not recognized\n");
 		exit(1); // exits out of program due to error	
 	}
 }
 
 void write_image_data(char* file_format, char* output_file_name)
 {
+	FILE *fp;
 	
+	fp = fopen(output_file_name, "a"); // error checking around creating new file?
+	
+	printf("Output file name is: %s\n", output_file_name);
+	
+	if(fp == NULL) // CHANGE this?
+	{
+		fprintf(stderr, "Error: File couldn't be created/modified.\n");
+		exit(1); // exits out of program due to error
+	}
+	
+	char* current_line;
+	
+	printf("The current file format is %s\n", buffer->file_format);
+	
+	if(strcmp(file_format, "P3") == 0)
+	{	
+
+
+		fclose(fp);
+    }
+	else if(strcmp(file_format, "P6") == 0)
+	{
+		fclose(fp);
+		fopen(output_file_name, "wb");
+		fwrite(buffer->file_data, sizeof(unsigned char), strlen(buffer->file_data), fp); // CHANGE THE MAX NUMBER HERE
+		
+		fclose(fp);
+	}
+	
+	else
+	{
+		fprintf(stderr, "Error: File format to write out not recognized\n");
+		exit(1); // exits out of program due to error	
+	}
+	//close file?
 }

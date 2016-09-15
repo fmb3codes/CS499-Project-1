@@ -10,11 +10,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef struct img_info {
-  unsigned char* info;
-} img_info;
+typedef struct pixel_data {
+  unsigned char* file_format;
+  unsigned char* file_comment;
+  unsigned char* file_height;
+  unsigned char* file_width;
+  unsigned char* file_maxcolor;
+  void* file_data;
+} pixel_data;
 
-img_info *buffer;
+pixel_data *buffer;
+
+void read_header_data(char* file_format, char* input_file_name, pixel_data* file_buffer);
 
 void read_image_data(char* file_format, char* input_file_name);
 
@@ -74,13 +81,21 @@ int main(int argc, char** argv)
 	
 	printf("Buffer has been properly allocated memory and buffer size is: %d\n", sizeof(buffer));
 	
+	read_header_data(filetype, inputname, buffer);
 	
-	
-	
-
-	
-	
-	
-	return 0;
 }
 
+void read_header_data(char* file_format, char* input_file_name, pixel_data* file_buffer)
+{
+	
+}
+
+void read_image_data(char* file_format, char* input_file_name)
+{
+	
+}
+
+void write_image_data(char* file_format, char* output_file_name)
+{
+	
+}

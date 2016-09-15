@@ -189,6 +189,8 @@ void read_header_data(char* file_format, char* input_file_name)
 		
 		printf("Current max color value is: %d\n", atoi(current_line));
 		
+		printf("Max color value is of size (character): %d, (integer): %d, and length: %d\n", sizeof(current_line), sizeof(atoi(current_line)), strlen(current_line));
+		
 		
 	 }
 	 
@@ -272,11 +274,19 @@ void read_image_data(char* file_format, char* input_file_name)
 			
 		}
 		printf("Final buffer is: %s\n", buffer->file_data);
+		fclose(fp);
 	}
 	
 	else if(strcmp(buffer->file_format, "P6\n") == 0)
 	{
-		
+		fclose(fp);
+		fopen(input_file_name, "rb");
+		unsigned char * test;
+		test = (unsigned char *)calloc(1, sizeof(unsigned char));
+		fread(buffer->file_data, sizeof(unsigned char), 5000, fp); // CHANGE 5000 TO FILE SIZE
+
+		printf("Final buffer is: %s\n", buffer->file_data);		
+		fclose(fp);
 	}
 	
 	else

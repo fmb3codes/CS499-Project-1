@@ -71,12 +71,13 @@ int main(int argc, char** argv)
 	printf("Buffer hasn't been properly allocated memory yet and buffer size is: %d\n", sizeof(buffer));
 	
 	buffer = (struct pixel_data*)malloc(sizeof(struct pixel_data)); // allocates memory to struct pointer
-	buffer->file_data = (unsigned char *)malloc(filesize);
+	buffer->file_data = (unsigned char *)calloc(filesize, sizeof(unsigned char));
 	buffer->file_format = (char *)malloc(3);
 	buffer->file_comment = (char *)malloc(1024);
 	buffer->file_height = (char *)malloc(100);
 	buffer->file_width = (char *)malloc(100);
 	buffer->file_maxcolor = (char *)malloc(100);
+	
 	
 	// Potentially remove this
 	if(buffer == NULL || buffer->file_data == NULL || buffer->file_format == NULL || buffer->file_comment == NULL || buffer->file_height == NULL || buffer->file_width == NULL || buffer->file_maxcolor == NULL)
@@ -88,6 +89,7 @@ int main(int argc, char** argv)
 	printf("Buffer has been properly allocated memory and buffer size is: %d\n", sizeof(buffer));
 	
 	read_header_data(filetype, inputname);
+	read_image_data(filetype, inputname);
 	
 	return 0;
 	
@@ -113,7 +115,7 @@ void read_header_data(char* file_format, char* input_file_name)
 
 	//fgets(current_line, 1024, fp);
 	
-	printf("Current line is %s and length is %d\n", current_line, strlen(current_line));
+	//printf("Current line is %s and length is %d\n", current_line, strlen(current_line));
 	
 	printf("Passed fgets\n");
 	//printf("About to read file format into buffer:%s\n", current_line);
@@ -126,13 +128,19 @@ void read_header_data(char* file_format, char* input_file_name)
 	//(*buffer).file_format = (unsigned char *)malloc(3);
 	
 	printf("Current stored buffer file format is: %s\n", buffer->file_format);
+	printf("Current line is %s and length is %d\n", current_line, strlen(current_line));
+
 	
 	//buffer->file_format = fgets(current_line, 1024, fp); // stores file format 
 	
+	if(strcmp(buffer->file_format, "P3\n") == 0)
+	{
+		printf("Yes the formats are equal\n");
+	}
 
-	//printf("File format read in is: %s\n", buffer->file_format);
 	
-	if(strcmp(buffer->file_format, "P3\n") != 0 && strcmp(buffer->file_format, "P6\n") != 0)
+    //printf("file_format equal to %d and %d and %d\n", strcmp(buffer->file_format, "P3"), strcmp(buffer->file_format, "P3\\"), strcmp(buffer->file_format, "P3\n"));
+	if((strcmp(buffer->file_format, "P3\n") != 0) && (strcmp(buffer->file_format, "P6\n") != 0))
 	{
 		fprintf(stderr, "Error: Given file format is neither P3 nor P6.\n");
 		exit(1); // exits out of program due to error		
@@ -145,10 +153,10 @@ void read_header_data(char* file_format, char* input_file_name)
 	 
 	 int is_comment = 1;
 	 
-	 //checks for comment or empty line
+	 //checks for comment
 	 if(*current_line == '#')
 	 {
-		strcpy(buffer->file_format, current_line);
+		strcpy(buffer->file_comment, current_line);
 		is_comment = 0;
 		
 		fgets(current_line, 1024, fp);
@@ -217,15 +225,65 @@ void read_header_data(char* file_format, char* input_file_name)
 		
 	 }
 	 
-	
-	
-	
 	fclose(fp);
 }
 
 void read_image_data(char* file_format, char* input_file_name)
 {
+	FILE *fp;
 	
+	fp = fopen(input_file_name, "r");
+	
+	printf("Input file name is: %s\n", input_file_name);
+	
+	if(fp == NULL)
+	{
+		fprintf(stderr, "Error: File didn't open properly; filename may be incorrect or file may not exist.\n");
+		exit(1); // exits out of program due to error
+	}
+	
+	char* current_line;
+	
+	printf("The current file format is %s\n", buffer->file_format);
+	
+	if(strcmp(buffer->file_format, "P3\n") == 0)
+	{
+		
+		int current_number = 0;
+		while(1)
+		{
+			//current_character = atoi(fgetc(fp));
+			fgets(current_line, 1024, fp); // CHANGE THE MAX NUMBER
+			if(feof(fp))
+			{
+				break;
+			}
+			strcat(buffer->file_data, current_line);
+			current_number = atoi(current_line);
+			printf("Current line is: %s\n", current_line);
+			printf("Current line after conversion is: %d\n", atoi(current_line));
+			
+		    if(current_number < 0 || current_number > 255)
+			{
+				fprintf(stderr, "Error: Invalid color value in given file (RGB value not between 0-255).\n");
+				exit(1); // exits out of program due to error				
+			}
+			
+			
+		}
+		printf("Final buffer is: %s\n", buffer->file_data);
+	}
+	
+	else if(strcmp(buffer->file_format, "P6\n") == 0)
+	{
+		
+	}
+	
+	else
+	{
+		fprintf(stderr, "Error: File format not recognized\n");
+		exit(1); // exits out of program due to error	
+	}
 }
 
 void write_image_data(char* file_format, char* output_file_name)

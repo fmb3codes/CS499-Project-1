@@ -105,10 +105,10 @@ int main(int argc, char** argv)
 	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height) + 1);
 	
 	read_image_data(filetype, inputname, filesize);
-	printf("Done reading and going to print...\n");
+	printf("Done reading and going to write...\n");
 	
-	print_pixels(image_buffer);
-	//write_image_data(filetype, outputname);
+	//print_pixels(image_buffer);
+	write_image_data(filetype, outputname);
 	
 	
 	return 0;
@@ -496,24 +496,42 @@ void write_image_data(char* file_format, char* output_file_name)
 	if(strcmp(file_format, "P3") == 0)
 	{	
         fprintf(fp, header_buffer->file_format); // need to write null-terminator?
+		fprintf(fp, "\n");
 		fprintf(fp, header_buffer->file_width);
+		fprintf(fp, " ");
 		fprintf(fp, header_buffer->file_height);
+		fprintf(fp, "\n");
 		fprintf(fp, header_buffer->file_maxcolor);
+		fprintf(fp, "\n");
 		
 		int i = 0;
 		int j = 0;
 		unsigned char temp[64] = {0};
+		char temp_string[64];
 		image_data current_pixel;
 		image_data* temp_ptr = image_buffer;
 		
 		printf("Printing P3 data\n");
-		while(i != sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
+		while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
 	    {
-				//temp[j++] == (*temp_ptr).r;
-				//if(strcmp((*tmp_ptr).r, '0') == 0)
-					
+			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
+			sprintf(temp_string, "%d", (*temp_ptr).r);
+			fprintf(fp, temp_string);
+			memset(temp_string, 0, 64);
+			fprintf(fp, "\n");
+			
+			sprintf(temp_string, "%d", (*temp_ptr).g);
+			fprintf(fp, temp_string);
+			memset(temp_string, 0, 64);
+			fprintf(fp, "\n");
+			
+			sprintf(temp_string, "%d", (*temp_ptr).b);			
+			fprintf(fp, temp_string);
+			memset(temp_string, 0, 64);
+			fprintf(fp, "\n");
 				
-				temp[j] = 0;
+			temp_ptr++;
+			i++;
 		}
         //fprintf(fp, header_buffer->file_data);
 
@@ -542,8 +560,11 @@ void print_pixels(image_data* pixels)
 	printf("Width is: %d\nHeight is: %d\n", atoi(header_buffer->file_width), atoi(header_buffer->file_height));
 	while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
 	{
+		char temp_str[64];
+		sprintf(temp_str, "%d", (*pixels).r);
 		printf("Printing pixel #%d...\n", i++); 
 		printf("R pixel is:%d\nG pixel is:%d\nB pixel is:%d\n", (*pixels).r, (*pixels).g, (*pixels).b);
+		printf("Printing R pixel as string: %s\n", temp_str);;
 		pixels++;
 	}
 }

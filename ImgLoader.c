@@ -110,6 +110,8 @@ int main(int argc, char** argv)
 	//print_pixels(image_buffer);
 	write_image_data(filetype, outputname);
 	
+	//CHECK IF NUMBERS GREATER THAN MAX COLOR VALUE
+	
 	
 	return 0;
 	
@@ -491,19 +493,22 @@ void write_image_data(char* file_format, char* output_file_name)
 	
 	char* current_line;
 	
+	
 	printf("The current file format is %s\n", header_buffer->file_format);
+	fprintf(fp, header_buffer->file_format); // need to write null-terminator?
+	fprintf(fp, "\n");
+	fprintf(fp, header_buffer->file_width);
+	fprintf(fp, " ");
+	fprintf(fp, header_buffer->file_height);
+	fprintf(fp, "\n");
+	fprintf(fp, header_buffer->file_maxcolor);
+	fprintf(fp, "\n");
+	//current_location = ftell(fp);
+	//printf("New current location is: %d\n", current_location);
+	
 	
 	if(strcmp(file_format, "P3") == 0)
-	{	
-        fprintf(fp, header_buffer->file_format); // need to write null-terminator?
-		fprintf(fp, "\n");
-		fprintf(fp, header_buffer->file_width);
-		fprintf(fp, " ");
-		fprintf(fp, header_buffer->file_height);
-		fprintf(fp, "\n");
-		fprintf(fp, header_buffer->file_maxcolor);
-		fprintf(fp, "\n");
-		
+	{		
 		int i = 0;
 		int j = 0;
 		unsigned char temp[64] = {0};
@@ -511,7 +516,7 @@ void write_image_data(char* file_format, char* output_file_name)
 		image_data current_pixel;
 		image_data* temp_ptr = image_buffer;
 		
-		printf("Printing P3 data\n");
+		printf("Writing P3 data\n");
 		while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
 	    {
 			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
@@ -540,8 +545,45 @@ void write_image_data(char* file_format, char* output_file_name)
 	else if(strcmp(file_format, "P6") == 0)
 	{
 		fclose(fp);
-		fopen(output_file_name, "wb");
-		fwrite(header_buffer->file_data, sizeof(unsigned char), strlen(header_buffer->file_data), fp); // CHANGE THE MAX NUMBER HERE
+		fopen(output_file_name, "ab");
+		printf("Current location is still %d\n", current_location);
+		//fseek(fp, current_location, SEEK_SET);
+		int i = 0;
+		char temp_string[64];
+		image_data current_pixel;
+		image_data* temp_ptr = image_buffer;
+		
+		printf("Writing P6 data\n");
+		while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
+	    {
+			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
+			sprintf(temp_string, "%d", (*temp_ptr).r);			
+			fwrite(temp_string, 1, sizeof(temp_string), fp);
+			memset(temp_string, 0, 64);
+			strcpy(temp_string, " ");
+			fwrite(temp_string, 1, sizeof(temp_string), fp);
+			memset(temp_string, 0, 64);
+			
+			sprintf(temp_string, "%d", (*temp_ptr).g);
+			fprintf(fp, temp_string);
+			fwrite(temp_string, 1, sizeof(temp_string), fp);
+			memset(temp_string, 0, 64);
+			strcpy(temp_string, " ");
+			fwrite(temp_string, 1, sizeof(temp_string), fp);
+			memset(temp_string, 0, 64);
+			
+			sprintf(temp_string, "%d", (*temp_ptr).b);	
+			fwrite(temp_string, 1, sizeof(temp_string), fp);			
+			fprintf(fp, temp_string);
+			memset(temp_string, 0, 64);
+			strcpy(temp_string, " ");
+			fwrite(temp_string, 1, sizeof(temp_string), fp);
+			memset(temp_string, 0, 64);
+				
+			temp_ptr++;
+			i++;
+		}
+		//fwrite(header_buffer->file_data, sizeof(unsigned char), strlen(header_buffer->file_data), fp); // CHANGE THE MAX NUMBER HERE
 		
 		fclose(fp);
 	}

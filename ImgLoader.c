@@ -1,39 +1,44 @@
 //
-//  FBerry_CS430_ImageLoader.c
+//  FBerry_CS430_Project1.c
 //  CS430 Project 1
 //
 //  Frankie Berry
 //
-
 
 // pre-processor directives
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct pixel_data {
+// header_data buffer which is intended to contain all relevant header information
+typedef struct header_data {
   char* file_format;
   char* file_comment;
   char* file_height;
   char* file_width;
   char* file_maxcolor;
-} pixel_data;
+} header_data;
 
+// image_data buffer which is intended to hold a set of RGB pixels represented as unsigned char's
 typedef struct image_data {
   unsigned char r, g, b;
 } image_data;
 
-pixel_data *header_buffer;
+// global header_data buffer
+header_data *header_buffer;
 
+// global image_data buffer
 image_data *image_buffer;
 
+// global variable meant to track a file pointer, specifically in order to track where the header information in a .ppm file ends for convenience
 int current_location;
 
-void read_header_data(char* input_file_name);
+//function prototypes
+void read_header_data(char* input_file_name); // function meant to read and parse through the header information of a .ppm file
 
-void read_image_data(char* input_file_name);
+void read_image_data(char* input_file_name); // function meant to read and parse through all image information located after the header information in a .ppm file
 
-void write_image_data(char* file_format, char* output_file_name);
+void write_image_data(char* file_format, char* output_file_name); // function meant to write header and image data into a specified .ppm format (P3 or P6); when called, necessary information has been read into the global buffers
 
 void print_pixels(image_data* pixel);
 //
@@ -49,39 +54,68 @@ int main(int argc, char** argv)
 		return -1;
 	}
 	
-	char *filetype = argv[1];
-	char *inputname = argv[2];
-	char *outputname = argv[3];
+	// block of code storing each of the 3 arguments passed into the command line
+	char *file_type = argv[1];
+	char *input_name = argv[2];
+	char *output_name = argv[3];
 	
 	// CHECK FILE TYPE
-	printf("Filetype is: %s\ninputname is: %s\noutputname is: %s\n", filetype, inputname, outputname);
+	printf("Filetype is: %s\ninput_name is: %s\noutput_name is: %s\n", file_type, input_name, output_name);
+	
+	if(strcmp(file_type, "P3") != 0 && strcmp(file_type, "P6") && strcmp(file_type, "p3") != 0 && strcmp(file_type, "p6"))
+	{
+		fprintf(stderr, "Error: Given file format is invalid; file format should be 'P3' or 'P6'\n");
+		return -1;
+	}
+	
+	// capitalizes the P in P# if necessary for convenience later on
+	if(*file_type >= 'a' && *file_type <= 'z')
+	{
+		printf("letter is lowercase -> formatting...\n");
+		printf("Previous format was: %s\n", file_type);
+		*(file_type) = 'P'; 
+		printf("New format is: %s\n", file_type);
+	}
+	
+	char* temp_ptr;
+	int input_length = strlen(input_name);
+	int output_length = strlen(output_name);
+	
+	temp_ptr = input_name + (input_length - 4);
+	printf("temp_ptr is: %s\n", temp_ptr);
+	if(strcmp(temp_ptr, ".ppm") != 0)
+	{
+		fprintf(stderr, "Error: Input file must be a .ppm file\n");
+		return -1;
+	}
+	temp_ptr = output_name + (output_length - 4);
+	printf("temp_ptr is: %s\n", temp_ptr);
+	if(strcmp(temp_ptr, ".ppm") != 0)
+	{
+		fprintf(stderr, "Error: Output file must be a .ppm file\n");
+		return -1;
+	}
+	
+	return 0;
+
+	
+	
+	
+	// add error checking on extension
 	
 	FILE *fp;
 	int filesize;
 	
-	fp = fopen(inputname, "r");
+	fp = fopen(input_name, "r");
 	
 	if(fp == NULL)
 	{
 		fprintf(stderr, "Error: File didn't open properly; filename may be incorrect or file may not exist.\n");
-		exit(1);
-	}
+		return -1;
+	}	
 	
-	printf("File opened successfully\n");
-	
-	fseek(fp, 0, SEEK_END);
-	filesize = ftell(fp);
-	fseek(fp, 0, SEEK_SET);
-	
-	
-	fclose(fp);
-	
-	printf("Calculated file size is: %d\n", filesize);
-	
-	
-	printf("Buffer hasn't been properly allocated memory yet and header_buffer size is: %d\n", sizeof(header_buffer));
-	
-	header_buffer = (struct pixel_data*)malloc(sizeof(struct pixel_data)); // allocates memory to struct pointer
+	// block of code allocating memory to global header_buffer before its use
+	header_buffer = (struct header_data*)malloc(sizeof(struct header_data)); 
 	header_buffer->file_format = (char *)malloc(3);
 	header_buffer->file_comment = (char *)malloc(1024);
 	header_buffer->file_height = (char *)malloc(100);
@@ -89,25 +123,25 @@ int main(int argc, char** argv)
 	header_buffer->file_maxcolor = (char *)malloc(100);
 	
 	
-	// Potentially remove this
+	/*// Potentially remove this
 	if(header_buffer == NULL || header_buffer->file_format == NULL || header_buffer->file_comment == NULL || header_buffer->file_height == NULL || header_buffer->file_width == NULL || header_buffer->file_maxcolor == NULL)
 	{
 		fprintf(stderr, "Error: Buffer wasn't properly allocated memory.\n");
 		return -1;
-	}
+	}*/
 	
-	printf("Buffer has been properly allocated memory and header_buffer size is: %d\n", sizeof(header_buffer));
+	//printf("Buffer has been properly allocated memory and header_buffer size is: %d\n", sizeof(header_buffer));
 	
-	read_header_data(inputname);
-	
-	printf("Size of image struct is: %d\n", sizeof(image_data));
+	read_header_data(input_name);
+
 	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)  + 1); // + 1
 	
-	read_image_data(inputname);
+	read_image_data(input_name);
 	printf("Done reading and going to write...\n");
 	
 	print_pixels(image_buffer);
-    write_image_data(filetype, outputname);
+    write_image_data(file_type, output_name);
+	printf("All finished!\n");
 	
 	//CHECK IF NUMBERS GREATER THAN MAX COLOR VALUE
 	

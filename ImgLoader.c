@@ -489,16 +489,7 @@ void read_image_data(char* file_format, char* input_file_name, int file_size)
 			}
 		}
 
-		
-		printf("Now current location is: %d\n", ftell(fp));
-		printf("C is: %d\n", c);
-		c = fgetc(fp);
-		printf("C after an fgetc is: %d\n", c);
-		printf("Now current location is: %d\n", ftell(fp));
-		
-		printf("Our recorded location is: %d\n", current_location);
-		
-		
+				
 		
 		fclose(fp);
 		fopen(input_file_name, "rb");
@@ -628,7 +619,7 @@ void write_image_data(char* file_format, char* output_file_name)
 	{
 		fclose(fp);
 		fopen(output_file_name, "ab");
-		printf("Current location is still %d\n", current_location);
+		//printf("Current location is still %d\n", current_location);
 		//fseek(fp, current_location, SEEK_SET);
 		int i = 0;
 		char temp_string[64];
@@ -638,6 +629,7 @@ void write_image_data(char* file_format, char* output_file_name)
 		printf("Writing P6 data\n");
 		while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
 	    {
+			/*
 			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
 			sprintf(temp_string, "%d", (*temp_ptr).r);			
 			fwrite(temp_string, 1, sizeof(temp_string), fp);
@@ -660,7 +652,11 @@ void write_image_data(char* file_format, char* output_file_name)
 			memset(temp_string, 0, 64);
 			strcpy(temp_string, " ");
 			fwrite(temp_string, 1, sizeof(temp_string), fp);
-			memset(temp_string, 0, 64);
+			memset(temp_string, 0, 64);*/
+			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
+			fwrite(&(*temp_ptr).r, sizeof(unsigned char), 1, fp);
+			fwrite(&(*temp_ptr).g, sizeof(unsigned char), 1, fp);
+			fwrite(&(*temp_ptr).b, sizeof(unsigned char), 1, fp);
 				
 			temp_ptr++;
 			i++;

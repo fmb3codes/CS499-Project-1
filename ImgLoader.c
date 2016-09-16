@@ -54,6 +54,7 @@ int main(int argc, char** argv)
 	char *inputname = argv[2];
 	char *outputname = argv[3];
 	
+	// CHECK FILE TYPE
 	printf("Filetype is: %s\ninputname is: %s\noutputname is: %s\n", filetype, inputname, outputname);
 	
 	FILE *fp;
@@ -102,13 +103,13 @@ int main(int argc, char** argv)
 	
 	printf("Size of image struct is: %d\n", sizeof(image_data));
 	header_buffer->file_data = (unsigned char *)malloc(sizeof(pixel_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)); // allocates after finding width and height
-	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height) + 1);
+	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)  + 1); // + 1
 	
 	read_image_data(filetype, inputname, filesize);
 	printf("Done reading and going to write...\n");
 	
-	//print_pixels(image_buffer);
-	write_image_data(filetype, outputname);
+	print_pixels(image_buffer);
+    write_image_data(filetype, outputname);
 	
 	//CHECK IF NUMBERS GREATER THAN MAX COLOR VALUE
 	
@@ -336,11 +337,11 @@ void read_image_data(char* file_format, char* input_file_name, int file_size)
 	}
 	
 	printf("The current file format is %s\n", header_buffer->file_format);
+	fseek(fp, current_location, SEEK_SET);
 	
 	//TRY getc?
 	if(strcmp(header_buffer->file_format, "P3") == 0)
 	{
-		fseek(fp, current_location, SEEK_SET);
 		
 		char* current_line;
 	    current_line = (char *)malloc(1000);
@@ -451,16 +452,96 @@ void read_image_data(char* file_format, char* input_file_name, int file_size)
 	}
 	
 	else if(strcmp(header_buffer->file_format, "P6") == 0)
-	{
+	{	
+		
+		char* current_line;
+	    current_line = (char *)malloc(1000);
+	    //signed char temp[64] = {0};
+	    int c = fgetc(fp);
+		//printf("C before init is %d or %s\n", c, c);
+	    int i = 0;
+		int j = 0;
+		//int struct_counter = 0;
+		int current_number = 0;
+		image_data current_pixel;
+		image_data* temp_ptr = image_buffer;
+		current_pixel.r = '0';
+		current_pixel.g = '0';
+		current_pixel.b = '0';
+		int line = 0;
+		int test_counter = 0;
+		
+		
+		printf("C before anything else 1 is: %d or %c and size is: %d\n", c, c, sizeof(c));
+		while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n') // COPY OVER TO P6 SECTION (reads up to non-header data)
+		{
+			printf("Loop evaluated\n");
+			if(c == '#')
+			{
+				fgets(current_line, 1024, fp);
+				current_location = ftell(fp); // since P6 doesn't use fgetc after initial whitespace removal verification, current_location needs to be stored before fget(c) to avoid missing the first number of the file
+				c = fgetc(fp);
+			}
+			else
+			{
+				current_location = ftell(fp); // same logic as above comment
+				c = fgetc(fp);
+			}
+		}
+
+		
+		printf("Now current location is: %d\n", ftell(fp));
+		printf("C is: %d\n", c);
+		c = fgetc(fp);
+		printf("C after an fgetc is: %d\n", c);
+		printf("Now current location is: %d\n", ftell(fp));
+		
+		printf("Our recorded location is: %d\n", current_location);
+		
+		
+		
 		fclose(fp);
 		fopen(input_file_name, "rb");
 		fseek(fp, current_location, SEEK_SET);
 		
-		char* current_line;
-	    current_line = (char *)malloc(1000);
-		unsigned char * test;
-		test = (unsigned char *)calloc(1, sizeof(unsigned char));
-		fread(header_buffer->file_data, sizeof(unsigned char), file_size, fp); // CHANGE 5000 TO FILE SIZE
+		
+		//for(i = 0; i < atoi(header_buffer->file_width) * atoi(header_buffer->file_height); i++)
+		//while(!feof(fp))
+		while(i < atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
+		{
+			fread(&current_pixel.r, sizeof(unsigned char), 1, fp); //<-- Note inner for(j... has been removed
+			fread(&current_pixel.g, sizeof(unsigned char), 1, fp);
+			fread(&current_pixel.b, sizeof(unsigned char), 1, fp);	
+			printf("On lines#%d\n", line+=3);
+			printf("Red is: %d and Blue is %d and Green is: %d\n", current_pixel.r, current_pixel.b, current_pixel.g);
+			*temp_ptr = current_pixel;
+			temp_ptr++;
+			
+			// error checking block for each individual pixel to make sure they're not outside the color range limit
+			if(current_pixel.r < 0 || current_pixel.r  > atoi(header_buffer->file_maxcolor))
+			{
+				fprintf(stderr, "Error: Invalid color value in given file (RGB value not between 0-%d).\n", atoi(header_buffer->file_maxcolor));
+				exit(1); // exits out of program due to error				
+			}
+			
+			if(current_pixel.g < 0 || current_pixel.g > atoi(header_buffer->file_maxcolor))
+			{
+				fprintf(stderr, "Error: Invalid color value in given file (RGB value not between 0-%d).\n", atoi(header_buffer->file_maxcolor));
+				exit(1); // exits out of program due to error				
+			}
+			
+			if(current_pixel.b < 0 || current_pixel.b > atoi(header_buffer->file_maxcolor))
+			{
+				fprintf(stderr, "Error: Invalid color value in given file (RGB value not between 0-%d).\n", atoi(header_buffer->file_maxcolor));
+				exit(1); // exits out of program due to error				
+			}
+			
+			current_pixel.r = '0';
+			current_pixel.g = '0';
+			current_pixel.b = '0';
+			i++;
+		}
+		
 
 		//printf("Final header_buffer is: %s\n", header_buffer->file_data);		
 		//free(current_line);
@@ -542,6 +623,7 @@ void write_image_data(char* file_format, char* output_file_name)
 
 		fclose(fp);
     }
+	
 	else if(strcmp(file_format, "P6") == 0)
 	{
 		fclose(fp);

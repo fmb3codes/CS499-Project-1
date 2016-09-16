@@ -20,7 +20,15 @@ typedef struct pixel_data {
   void* file_data;
 } pixel_data;
 
-pixel_data *buffer;
+typedef struct image_data {
+  unsigned char r, g, b;
+} image_data;
+
+pixel_data *header_buffer;
+
+image_data *image_buffer;
+
+int current_location;
 
 void read_header_data(char* file_format, char* input_file_name);
 
@@ -28,6 +36,9 @@ void read_image_data(char* file_format, char* input_file_name, int file_size);
 
 void write_image_data(char* file_format, char* output_file_name);
 
+void print_pixels(image_data* pixel);
+//
+//	FREEEEEEEE MEMORY?
 //REMEMBER to go through and add error checking for incorrect file type/argument size/etc
 int main(int argc, char** argv)
 {
@@ -68,29 +79,37 @@ int main(int argc, char** argv)
 	printf("Calculated file size is: %d\n", filesize);
 	
 	
-	printf("Buffer hasn't been properly allocated memory yet and buffer size is: %d\n", sizeof(buffer));
+	printf("Buffer hasn't been properly allocated memory yet and header_buffer size is: %d\n", sizeof(header_buffer));
 	
-	buffer = (struct pixel_data*)malloc(sizeof(struct pixel_data)); // allocates memory to struct pointer
-	buffer->file_data = (unsigned char *)calloc(filesize, sizeof(unsigned char));
-	buffer->file_format = (char *)malloc(3);
-	buffer->file_comment = (char *)malloc(1024);
-	buffer->file_height = (char *)malloc(100);
-	buffer->file_width = (char *)malloc(100);
-	buffer->file_maxcolor = (char *)malloc(100);
+	header_buffer = (struct pixel_data*)malloc(sizeof(struct pixel_data)); // allocates memory to struct pointer
+	header_buffer->file_format = (char *)malloc(3);
+	header_buffer->file_comment = (char *)malloc(1024);
+	header_buffer->file_height = (char *)malloc(100);
+	header_buffer->file_width = (char *)malloc(100);
+	header_buffer->file_maxcolor = (char *)malloc(100);
 	
 	
 	// Potentially remove this
-	if(buffer == NULL || buffer->file_data == NULL || buffer->file_format == NULL || buffer->file_comment == NULL || buffer->file_height == NULL || buffer->file_width == NULL || buffer->file_maxcolor == NULL)
+	if(header_buffer == NULL || header_buffer->file_data == NULL || header_buffer->file_format == NULL || header_buffer->file_comment == NULL || header_buffer->file_height == NULL || header_buffer->file_width == NULL || header_buffer->file_maxcolor == NULL)
 	{
 		fprintf(stderr, "Error: Buffer wasn't properly allocated memory.\n");
 		return -1;
 	}
 	
-	printf("Buffer has been properly allocated memory and buffer size is: %d\n", sizeof(buffer));
+	printf("Buffer has been properly allocated memory and header_buffer size is: %d\n", sizeof(header_buffer));
 	
 	read_header_data(filetype, inputname);
-	//read_image_data(filetype, inputname, filesize);
+	
+	printf("Size of image struct is: %d\n", sizeof(image_data));
+	header_buffer->file_data = (unsigned char *)malloc(sizeof(pixel_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)); // allocates after finding width and height
+	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height) + 1);
+	
+	read_image_data(filetype, inputname, filesize);
+	printf("Done reading and going to print...\n");
+	
+	print_pixels(image_buffer);
 	//write_image_data(filetype, outputname);
+	
 	
 	return 0;
 	
@@ -133,19 +152,19 @@ void read_header_data(char* file_format, char* input_file_name)
 	}
 	
 	temp[i] = 0;
-	strcpy(buffer->file_format, temp);
+	strcpy(header_buffer->file_format, temp);
 	memset(temp, 0, 64);
 	
 	
-	printf("file format is: %s\n", buffer->file_format);
+	printf("file format is: %s\n", header_buffer->file_format);
 	
-	if(strcmp(buffer->file_format, "P3\r\n") == 0)
+	if(strcmp(header_buffer->file_format, "P3\r\n") == 0)
 		printf("They're equal\n");
 	
-	printf("size of file_format is: %d\n", strlen(buffer->file_format));
+	printf("size of file_format is: %d\n", strlen(header_buffer->file_format));
 	
-    //printf("file_format equal to %d and %d and %d\n", strcmp(buffer->file_format, "P3"), strcmp(buffer->file_format, "P3\\"), strcmp(buffer->file_format, "P3\n"));
-	if((strcmp(buffer->file_format, "P3") != 0) && (strcmp(buffer->file_format, "P6") != 0))
+    //printf("file_format equal to %d and %d and %d\n", strcmp(header_buffer->file_format, "P3"), strcmp(header_buffer->file_format, "P3\\"), strcmp(header_buffer->file_format, "P3\n"));
+	if((strcmp(header_buffer->file_format, "P3") != 0) && (strcmp(header_buffer->file_format, "P6") != 0))
 	{
 		fprintf(stderr, "Error: Given file format is neither P3 nor P6.\n");
 		exit(1); // exits out of program due to error		
@@ -184,7 +203,7 @@ void read_header_data(char* file_format, char* input_file_name)
 	}
 	
 	temp[i] = 0;
-	strcpy(buffer->file_width, temp);
+	strcpy(header_buffer->file_width, temp);
 	int width = atoi(temp);
 	printf("File width is: %d\n", width);
 	memset(temp, 0, 64);
@@ -222,7 +241,7 @@ void read_header_data(char* file_format, char* input_file_name)
 	}
 	
 	temp[i] = 0;
-	strcpy(buffer->file_height, temp);
+	strcpy(header_buffer->file_height, temp);
 	int height = atoi(temp);
 	printf("File height is: %d\n", height);
 	memset(temp, 0, 64);
@@ -258,7 +277,7 @@ void read_header_data(char* file_format, char* input_file_name)
 		{
 			if(c == '#')
 			{
-			fgets(current_line, 1024, fp);
+				fgets(current_line, 1024, fp);
 			}
 			break;
 		}
@@ -267,7 +286,7 @@ void read_header_data(char* file_format, char* input_file_name)
 	}
 	
 	temp[i] = 0;
-	strcpy(buffer->file_maxcolor, temp);
+	strcpy(header_buffer->file_maxcolor, temp);
 	int maxcolor = atoi(temp);
 	printf("File maxcolor is: %d\n", maxcolor);
 	memset(temp, 0, 64);
@@ -278,7 +297,10 @@ void read_header_data(char* file_format, char* input_file_name)
 		    exit(1); // exits out of program due to error	
 		}
 	
+	current_location = ftell(fp);
+	printf("Current location is: %d\n", current_location);
 	 
+	//free(current_line);
 	fclose(fp);
 }
 
@@ -296,49 +318,150 @@ void read_image_data(char* file_format, char* input_file_name, int file_size)
 		exit(1); // exits out of program due to error
 	}
 	
-	char* current_line;
+	//char* current_line;
+	//current_line = (char *)malloc(1500);
+	//char temp[64] = {0};
+	//int c = fgetc(fp);
+	//int i = 0;
 	
-	printf("The current file format is %s\n", buffer->file_format);
+	//image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height));
+	
+	while(1)
+	{
+		//fseek(fp, current_location, SEEK_SET);
+		//printf("Current line is: %s\n", fgets(current_line, 1024, fp));
+		break; // POTENTIALLY READ UP TO NON-HEADER INFO and move to both P3 and P6 sections
+	}
+	
+	printf("The current file format is %s\n", header_buffer->file_format);
 	
 	//TRY getc?
-	if(strcmp(buffer->file_format, "P3\n") == 0)
+	if(strcmp(header_buffer->file_format, "P3") == 0)
 	{
+		fseek(fp, current_location, SEEK_SET);
 		
+		char* current_line;
+	    current_line = (char *)malloc(1000);
+	    signed char temp[64] = {0};
+	    int c = fgetc(fp);
+	    int i = 0;
+		int j = 0;
+		//int struct_counter = 0;
 		int current_number = 0;
+		image_data current_pixel;
+		image_data* temp_ptr = image_buffer;
+		current_pixel.r = '0';
+		current_pixel.g = '0';
+		current_pixel.b = '0';
+		int line = 0;
+		
+		
+		while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9')) // COPY OVER TO P6 SECTION (reads up to non-header data)
+		{
+			if(c == '#')
+			{
+				fgets(current_line, 1024, fp);
+				c = fgetc(fp);
+			}
+			else
+			{
+				c = fgetc(fp);
+			}
+		}
+		
 		while(1)
 		{
-			//current_character = atoi(fgetc(fp));
-			fgets(current_line, 1024, fp); // CHANGE THE MAX NUMBER
+			if(c == '\n' || c == ' ' || feof(fp))
+            {
+				printf("Found a white space\n");
+				printf("On line#%d\n", line++);
+				temp[i] = 0;
+				printf("Temp is now: %s\n", temp);
+				current_number = atoi(temp);
+			    //strcat(header_buffer->file_data, temp);	
+				//i++;
+				printf("Current i value is %d\n", i);
+				printf("Current j value is %d\n", j);
+				if(j == 0)
+				{
+					current_pixel.r = atoi(temp);
+					//current_pixel.r = temp;
+					printf("Adding r pixel %d\n", current_pixel.r);
+					j++;
+							
+				}
+				else if(j == 1)
+				{
+					current_pixel.g = atoi(temp);
+					//current_pixel.g = temp;
+					printf("Adding g pixel %d\n", current_pixel.g);
+					j++;
+						
+				}
+				else if(j == 2)
+				{
+					current_pixel.b = atoi(temp);
+					//current_pixel.b = temp;
+					printf("Adding b pixel %d\n", current_pixel.b);
+					j = 0;
+					*temp_ptr = current_pixel;
+					temp_ptr++;
+					current_pixel.r = '0';
+					current_pixel.g = '0';
+					current_pixel.b = '0';
+				}
+				i = 0;
+			
+			
+				memset(temp, 0, 64);
+				
+				printf("Current number is: %d\n", current_number);
+				
+				if(current_number < 0 || current_number > 255)
+				{
+					fprintf(stderr, "Error: Invalid color value in given file (RGB value not between 0-255).\n");
+					exit(1); // exits out of program due to error				
+				}
+				c = fgetc(fp);
+				
+				//printf("R pixel is:%c\nG pixel is:%c\nB pixel is:%c\n", current_pixel.r, current_pixel.g, current_pixel.b);
+				//printf("R pixel is:%c\nG pixel is:%c\nB pixel is:%c\n", (*image_buffer).r, (*image_buffer).g, (*image_buffer).b);
+				//print_pixel(current_pixel);
+				
+				
+			
+			}
 			if(feof(fp))
 			{
 				break;
 			}
-			strcat(buffer->file_data, current_line);
-			current_number = atoi(current_line);
-			printf("Current line is: %s\n", current_line);
-			printf("Current line after conversion is: %d\n", atoi(current_line));
+			//current_character = atoi(fgetc(fp));
+			//fgets(current_line, 1024, fp); // CHANGE THE MAX NUMBER
 			
-		    if(current_number < 0 || current_number > 255)
-			{
-				fprintf(stderr, "Error: Invalid color value in given file (RGB value not between 0-255).\n");
-				exit(1); // exits out of program due to error				
-			}
-			
-			
+			printf("C is currently: %c\n", c);
+			temp[i++] = c;			
+			c = fgetc(fp);
+					
 		}
-		printf("Final buffer is: %s\n", buffer->file_data);
+		//printf("Final header_buffer is: %s\n", header_buffer->file_data);
+		//free(current_line);
 		fclose(fp);
 	}
 	
-	else if(strcmp(buffer->file_format, "P6\n") == 0)
+	else if(strcmp(header_buffer->file_format, "P6") == 0)
 	{
 		fclose(fp);
 		fopen(input_file_name, "rb");
+		fseek(fp, current_location, SEEK_SET);
+		
+		char* current_line;
+	    current_line = (char *)malloc(1000);
 		unsigned char * test;
 		test = (unsigned char *)calloc(1, sizeof(unsigned char));
-		fread(buffer->file_data, sizeof(unsigned char), file_size, fp); // CHANGE 5000 TO FILE SIZE
+		fread(header_buffer->file_data, sizeof(unsigned char), file_size, fp); // CHANGE 5000 TO FILE SIZE
 
-		printf("Final buffer is: %s\n", buffer->file_data);		
+		//printf("Final header_buffer is: %s\n", header_buffer->file_data);		
+		//free(current_line);
 		fclose(fp);
 	}
 	
@@ -351,7 +474,7 @@ void read_image_data(char* file_format, char* input_file_name, int file_size)
 
 void write_image_data(char* file_format, char* output_file_name)
 {
-	*(buffer->file_format + 1) = *(file_format + 1); // rewrites # in P# to match correct destination file format before writing out
+	*(header_buffer->file_format + 1) = *(file_format + 1); // rewrites # in P# to match correct destination file format before writing out
 	printf("Getting to start\n");
 	FILE *fp;
 	
@@ -368,12 +491,31 @@ void write_image_data(char* file_format, char* output_file_name)
 	
 	char* current_line;
 	
-	printf("The current file format is %s\n", buffer->file_format);
+	printf("The current file format is %s\n", header_buffer->file_format);
 	
 	if(strcmp(file_format, "P3") == 0)
 	{	
+        fprintf(fp, header_buffer->file_format); // need to write null-terminator?
+		fprintf(fp, header_buffer->file_width);
+		fprintf(fp, header_buffer->file_height);
+		fprintf(fp, header_buffer->file_maxcolor);
+		
+		int i = 0;
+		int j = 0;
+		unsigned char temp[64] = {0};
+		image_data current_pixel;
+		image_data* temp_ptr = image_buffer;
+		
 		printf("Printing P3 data\n");
-        fprintf(fp, buffer->file_data);
+		while(i != sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
+	    {
+				//temp[j++] == (*temp_ptr).r;
+				//if(strcmp((*tmp_ptr).r, '0') == 0)
+					
+				
+				temp[j] = 0;
+		}
+        //fprintf(fp, header_buffer->file_data);
 
 		fclose(fp);
     }
@@ -381,7 +523,7 @@ void write_image_data(char* file_format, char* output_file_name)
 	{
 		fclose(fp);
 		fopen(output_file_name, "wb");
-		fwrite(buffer->file_data, sizeof(unsigned char), strlen(buffer->file_data), fp); // CHANGE THE MAX NUMBER HERE
+		fwrite(header_buffer->file_data, sizeof(unsigned char), strlen(header_buffer->file_data), fp); // CHANGE THE MAX NUMBER HERE
 		
 		fclose(fp);
 	}
@@ -392,4 +534,16 @@ void write_image_data(char* file_format, char* output_file_name)
 		exit(1); // exits out of program due to error	
 	}
 	//close file?
+}
+
+void print_pixels(image_data* pixels)
+{
+	int i = 0;
+	printf("Width is: %d\nHeight is: %d\n", atoi(header_buffer->file_width), atoi(header_buffer->file_height));
+	while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
+	{
+		printf("Printing pixel #%d...\n", i++); 
+		printf("R pixel is:%d\nG pixel is:%d\nB pixel is:%d\n", (*pixels).r, (*pixels).g, (*pixels).b);
+		pixels++;
+	}
 }

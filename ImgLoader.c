@@ -17,7 +17,6 @@ typedef struct pixel_data {
   char* file_height;
   char* file_width;
   char* file_maxcolor;
-  void* file_data;
 } pixel_data;
 
 typedef struct image_data {
@@ -30,9 +29,9 @@ image_data *image_buffer;
 
 int current_location;
 
-void read_header_data(char* file_format, char* input_file_name);
+void read_header_data(char* input_file_name);
 
-void read_image_data(char* file_format, char* input_file_name, int file_size);
+void read_image_data(char* input_file_name);
 
 void write_image_data(char* file_format, char* output_file_name);
 
@@ -91,7 +90,7 @@ int main(int argc, char** argv)
 	
 	
 	// Potentially remove this
-	if(header_buffer == NULL || header_buffer->file_data == NULL || header_buffer->file_format == NULL || header_buffer->file_comment == NULL || header_buffer->file_height == NULL || header_buffer->file_width == NULL || header_buffer->file_maxcolor == NULL)
+	if(header_buffer == NULL || header_buffer->file_format == NULL || header_buffer->file_comment == NULL || header_buffer->file_height == NULL || header_buffer->file_width == NULL || header_buffer->file_maxcolor == NULL)
 	{
 		fprintf(stderr, "Error: Buffer wasn't properly allocated memory.\n");
 		return -1;
@@ -99,13 +98,12 @@ int main(int argc, char** argv)
 	
 	printf("Buffer has been properly allocated memory and header_buffer size is: %d\n", sizeof(header_buffer));
 	
-	read_header_data(filetype, inputname);
+	read_header_data(inputname);
 	
 	printf("Size of image struct is: %d\n", sizeof(image_data));
-	header_buffer->file_data = (unsigned char *)malloc(sizeof(pixel_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)); // allocates after finding width and height
 	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)  + 1); // + 1
 	
-	read_image_data(filetype, inputname, filesize);
+	read_image_data(inputname);
 	printf("Done reading and going to write...\n");
 	
 	print_pixels(image_buffer);
@@ -118,7 +116,7 @@ int main(int argc, char** argv)
 	
 }
 
-void read_header_data(char* file_format, char* input_file_name)
+void read_header_data(char* input_file_name)
 {
 	FILE *fp;
 	
@@ -307,7 +305,7 @@ void read_header_data(char* file_format, char* input_file_name)
 	fclose(fp);
 }
 
-void read_image_data(char* file_format, char* input_file_name, int file_size)
+void read_image_data(char* input_file_name)
 {
 	FILE *fp;
 	

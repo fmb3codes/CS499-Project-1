@@ -71,38 +71,31 @@ int main(int argc, char** argv)
 	// capitalizes the P in P# if necessary for convenience later on
 	if(*file_type >= 'a' && *file_type <= 'z')
 	{
-		printf("letter is lowercase -> formatting...\n");
-		printf("Previous format was: %s\n", file_type);
 		*(file_type) = 'P'; 
-		printf("New format is: %s\n", file_type);
 	}
 	
+	// block of code which checks to make sure that user inputted a .ppm file for both the input and output command line arguments
 	char* temp_ptr;
 	int input_length = strlen(input_name);
 	int output_length = strlen(output_name);
 	
-	temp_ptr = input_name + (input_length - 4);
-	printf("temp_ptr is: %s\n", temp_ptr);
+	temp_ptr = input_name + (input_length - 4); // sets temp_ptr to be equal to the last 4 characters of the input_name, which should be .ppm
 	if(strcmp(temp_ptr, ".ppm") != 0)
 	{
 		fprintf(stderr, "Error: Input file must be a .ppm file\n");
 		return -1;
 	}
-	temp_ptr = output_name + (output_length - 4);
-	printf("temp_ptr is: %s\n", temp_ptr);
+	
+	temp_ptr = output_name + (output_length - 4); // sets temp_ptr to be equal to the last 4 characters of the output_name, which should be .ppm
 	if(strcmp(temp_ptr, ".ppm") != 0)
 	{
 		fprintf(stderr, "Error: Output file must be a .ppm file\n");
 		return -1;
 	}
+	// end of .ppm extension error checking	
+		
 	
-	return 0;
-
-	
-	
-	
-	// add error checking on extension
-	
+	// block of code which immediately checks to see if input file exists, whereas output file will be created if not
 	FILE *fp;
 	int filesize;
 	
@@ -113,6 +106,8 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Error: File didn't open properly; filename may be incorrect or file may not exist.\n");
 		return -1;
 	}	
+	// end of input file error checking
+	
 	
 	// block of code allocating memory to global header_buffer before its use
 	header_buffer = (struct header_data*)malloc(sizeof(struct header_data)); 
@@ -123,24 +118,17 @@ int main(int argc, char** argv)
 	header_buffer->file_maxcolor = (char *)malloc(100);
 	
 	
-	/*// Potentially remove this
-	if(header_buffer == NULL || header_buffer->file_format == NULL || header_buffer->file_comment == NULL || header_buffer->file_height == NULL || header_buffer->file_width == NULL || header_buffer->file_maxcolor == NULL)
-	{
-		fprintf(stderr, "Error: Buffer wasn't properly allocated memory.\n");
-		return -1;
-	}*/
-	
-	//printf("Buffer has been properly allocated memory and header_buffer size is: %d\n", sizeof(header_buffer));
-	
-	read_header_data(input_name);
+	// function calls which start the bulk of the program, including reading header data, reading image data, and then writing out both that header and image data into a file
+	read_header_data(input_name); // reads and parses header information
 
+	// intermediate image_buffer memory allocation here as file_width and file_height were previously unavailable
 	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)  + 1); // + 1
 	
-	read_image_data(input_name);
+	read_image_data(input_name); // reads and stores image information
 	printf("Done reading and going to write...\n");
 	
-	print_pixels(image_buffer);
-    write_image_data(file_type, output_name);
+	print_pixels(image_buffer); 
+    write_image_data(file_type, output_name); // writes out stored header and image information to file 
 	printf("All finished!\n");
 	
 	//CHECK IF NUMBERS GREATER THAN MAX COLOR VALUE
@@ -150,6 +138,7 @@ int main(int argc, char** argv)
 	
 }
 
+// read_header function takes in a sole input_file_name argument in order to know which file to read from
 void read_header_data(char* input_file_name)
 {
 	FILE *fp;
@@ -158,47 +147,40 @@ void read_header_data(char* input_file_name)
 	
 	printf("Input file name is: %s\n", input_file_name);
 	
+	// error checking again on input_file to validate its existence
 	if(fp == NULL)
 	{
 		fprintf(stderr, "Error: File didn't open properly; filename may be incorrect or file may not exist.\n");
 		exit(1); // exits out of program due to error
 	}
 	
-	char* current_line;
-	current_line = (char *)malloc(1500);
-	char temp[64] = {0};
-	int c = fgetc(fp);
-	int i = 0;
+	char* current_line; // character pointer used to read information from fgets
+	current_line = (char *)malloc(1500); // allocated memory to current_line; doesn't need too much since a single line in a .ppm file shouldn't be too long
+	char temp[64] = {0}; // temporary character array to store header information later on
+	int c = fgetc(fp); // initializes int c to the first character in the input file
+	int i = 0; // initializes iterator variable
 
-	
+	// determining file format
+	// while loop which is intended to read in the file format until whitespace is found
 	while(1)
 	{
-		printf("C is currently: %c\n", c);
-		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n') // white space conditional
 		{
 			if(c == '#')
 			{
-			fgets(current_line, 1024, fp);
+				fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
 			}
-			break;
+			break; // breaks out of whitespace once file format is read
 		}
-		temp[i++] = c;
-        c = fgetc(fp);			
+		temp[i++] = c; // stores non-white space character into temp chaacter array
+        c = fgetc(fp);	// stores next character in file in c		
 	}
 	
-	temp[i] = 0;
-	strcpy(header_buffer->file_format, temp);
-	memset(temp, 0, 64);
+	temp[i] = 0; // adds null-terminator at the end of the temporary character array
+	strcpy(header_buffer->file_format, temp); // copies what should be the file_format (P3/P6) into the header_buffer->file_format field
+	memset(temp, 0, 64); // resets all values in temp to 0 for later use
 	
-	
-	printf("file format is: %s\n", header_buffer->file_format);
-	
-	if(strcmp(header_buffer->file_format, "P3\r\n") == 0)
-		printf("They're equal\n");
-	
-	printf("size of file_format is: %d\n", strlen(header_buffer->file_format));
-	
-    //printf("file_format equal to %d and %d and %d\n", strcmp(header_buffer->file_format, "P3"), strcmp(header_buffer->file_format, "P3\\"), strcmp(header_buffer->file_format, "P3\n"));
+	// error check to make sure .ppm file contains either P3 or P6 as its magic number
 	if((strcmp(header_buffer->file_format, "P3") != 0) && (strcmp(header_buffer->file_format, "P6") != 0))
 	{
 		fprintf(stderr, "Error: Given file format is neither P3 nor P6.\n");
@@ -206,82 +188,85 @@ void read_header_data(char* input_file_name)
 	}
 	
 	
-	// file width
-	i = 0;
-	c = fgetc(fp);
-	printf("Is c a comment? %c\n", c);
-	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9'))
+	// determining file width
+	i = 0; // resets iterator variable to 0
+	c = fgetc(fp); // grabs the next character in the file
+	
+	// while loop which loop so long as the current character read in is whitespace, ignoring it accordingly
+	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
 	{
 		if(c == '#')
 		{
-			fgets(current_line, 1024, fp);
-		    c = fgetc(fp);
+			fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
+		    c = fgetc(fp); // new character grabbed from file for next while evaluation
 		}
 		else
 		{
-			c = fgetc(fp);
+			c = fgetc(fp); // if there was whitespace and it wasn't a comment, then grab next character for loop evaluation
 		}
 	}
+	
+	// new while loop which should be entered only after the current character is a non-whitespace character
 	while(1)
 	{
-		printf("C is currently: %c\n", c);
-		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n') // if statement which checks for white space
 		{
 			if(c == '#')
 			{
-			fgets(current_line, 1024, fp);
+				fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
 			}
-			break;
+			break; // breaks out of while loop once file width is read
 		}
-		temp[i++] = c;
-        c = fgetc(fp);			
+		temp[i++] = c; // stores non-white space character into temp chaacter array
+        c = fgetc(fp);	// stores next character in file in c			
 	}
 	
-	temp[i] = 0;
-	strcpy(header_buffer->file_width, temp);
-	int width = atoi(temp);
-	printf("File width is: %d\n", width);
-	memset(temp, 0, 64);
+	temp[i] = 0; // adds null-terminator at the end of the temporary character array
+	strcpy(header_buffer->file_width, temp); // stores file width as a string in the global header_buffer
+	int width = atoi(temp); // converts read-in width to int for error checking
+	memset(temp, 0, 64); // resets all values in temp to 0 for later use
 	
 	
 	
-	// file height
-	i = 0;
-	c = fgetc(fp);
-	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9'))
+	// determining file height
+	i = 0; // resets iterator variable to 0
+	c = fgetc(fp); // grabs the next character in the file
+	
+	// while loop which loop so long as the current character read in is whitespace, ignoring it accordingly
+	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
 	{
 		if(c == '#')
 		{
-			fgets(current_line, 1024, fp);
-		    c = fgetc(fp);
+			fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
+		    c = fgetc(fp); // new character grabbed from file for next while evaluation
 		}
 		else
 		{
-			c = fgetc(fp);
+			c = fgetc(fp); // if there was whitespace and it wasn't a comment, then grab next character for loop evaluation
 		}
 	}
+	
+	// new while loop which should be entered only after the current character is a non-whitespace character
 	while(1)
 	{
-		printf("C is currently: %c\n", c);
-		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n') // if statement which checks for white space
 		{
 			if(c == '#')
 			{
-			fgets(current_line, 1024, fp);
+				fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
 			}
-			break;
+			break; // breaks out of while loop once file height is read
 		}
-		temp[i++] = c;
-        c = fgetc(fp);			
+		temp[i++] = c; // stores non-white space character into temp chaacter array
+        c = fgetc(fp);	// stores next character in file in c			
 	}
 	
-	temp[i] = 0;
-	strcpy(header_buffer->file_height, temp);
-	int height = atoi(temp);
-	printf("File height is: %d\n", height);
-	memset(temp, 0, 64);
-	
-	
+	temp[i] = 0; // adds null-terminator at the end of the temporary character array
+	strcpy(header_buffer->file_height, temp); // stores file height as a string in the global header_buffer
+	int height = atoi(temp); // converts read-in height to int for error checking
+	memset(temp, 0, 64); // resets all values in temp to 0 for later use
+	 
+	// error check to make sure height and width are both greater than 0
 	if(height < 0 || width < 0)
 		{
 			fprintf(stderr, "Error: Invalid height or width.\n");
@@ -289,53 +274,53 @@ void read_header_data(char* input_file_name)
 		}
 		
 		
+    // determining max color
+	i = 0; // resets iterator variable to 0
+	c = fgetc(fp); // grabs the next character in the file
 	
-    // max color
-	i = 0;
-	c = fgetc(fp);
-	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9')) // potentially remove non-digit checker
+	// while loop which loop so long as the current character read in is whitespace, ignoring it accordingly	
+	while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
 	{
 		if(c == '#')
 		{
-			fgets(current_line, 1024, fp);
-		    c = fgetc(fp);
+			fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
+		    c = fgetc(fp); // new character grabbed from file for next while evaluation
 		}
 		else
 		{
-			c = fgetc(fp);
+			c = fgetc(fp); // if there was whitespace and it wasn't a comment, then grab next character for loop evaluation
 		}
 	}
+	
+	// new while loop which should be entered only after the current character is a non-whitespace character
 	while(1)
 	{
-		printf("C is currently: %c\n", c);
-		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n')
+		if(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n') // if statement which checks for white space
 		{
 			if(c == '#')
 			{
-				fgets(current_line, 1024, fp);
+				fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
 			}
-			break;
+			break; // breaks out of while loop once file maxcolor is read
 		}
-		temp[i++] = c;
-        c = fgetc(fp);			
+		temp[i++] = c; // stores non-white space character into temp chaacter array
+        c = fgetc(fp);	// stores next character in file in c			
 	}
 	
-	temp[i] = 0;
-	strcpy(header_buffer->file_maxcolor, temp);
-	int maxcolor = atoi(temp);
-	printf("File maxcolor is: %d\n", maxcolor);
-	memset(temp, 0, 64);
+	temp[i] = 0; // adds null-terminator at the end of the temporary character array
+	strcpy(header_buffer->file_maxcolor, temp); // stores file maxcolor as a string in the global header_buffer
+	int maxcolor = atoi(temp); // converts read-in maxcolor to int for error checking
+	memset(temp, 0, 64); // resets all values in temp to 0 for later use
 	
+	// error check to make sure max color fits within the correct color channel for this project
 	if(maxcolor < 0 || maxcolor > 255)
 		{
 			fprintf(stderr, "Error: Max color value is off\n");
 		    exit(1); // exits out of program due to error	
 		}
 	
-	current_location = ftell(fp);
-	printf("Current location is: %d\n", current_location);
+	current_location = ftell(fp); // stores location of file pointer after header is read in for later use when reading image data
 	 
-	//free(current_line);
 	fclose(fp);
 }
 

@@ -40,17 +40,14 @@ void read_image_data(char* input_file_name); // function meant to read and parse
 
 void write_image_data(char* file_format, char* output_file_name); // function meant to write header and image data into a specified .ppm format (P3 or P6); when called, necessary information has been read into the global buffers
 
-void print_pixels(image_data* pixel);
-//
-//	FREEEEEEEE MEMORY?
-//REMEMBER to go through and add error checking for incorrect file type/argument size/etc
+
 int main(int argc, char** argv)
 {
 	
 	printf("argc is: %d\n", argc);
 	if(argc != 4) // checks for 4 arguments which includes the argv[0] path argument as well as the 3 required arguments of format [P# input.ppm output.ppm]
 	{
-		fprintf(stderr, "Error: Incorrect number of arguments; format should be -> [P# input.ppm output.ppm]\n");
+		fprintf(stderr, "Error: Incorrect number of arguments; format should be -> [# input.ppm output.ppm]\n");
 		return -1;
 	}
 	
@@ -59,19 +56,10 @@ int main(int argc, char** argv)
 	char *input_name = argv[2];
 	char *output_name = argv[3];
 	
-	// CHECK FILE TYPE
-	printf("Filetype is: %s\ninput_name is: %s\noutput_name is: %s\n", file_type, input_name, output_name);
-	
-	if(strcmp(file_type, "P3") != 0 && strcmp(file_type, "P6") && strcmp(file_type, "p3") != 0 && strcmp(file_type, "p6"))
+	if(strcmp(file_type, "3") != 0 && strcmp(file_type, "6") != 0)
 	{
-		fprintf(stderr, "Error: Given file format is invalid; file format should be 'P3' or 'P6'\n");
+		fprintf(stderr, "Error: Given file format is invalid; desired final file format should be specified as '3' or '6'\n");
 		return -1;
-	}
-	
-	// capitalizes the P in P# if necessary for convenience later on
-	if(*file_type >= 'a' && *file_type <= 'z')
-	{
-		*(file_type) = 'P'; 
 	}
 	
 	// block of code which checks to make sure that user inputted a .ppm file for both the input and output command line arguments
@@ -127,25 +115,19 @@ int main(int argc, char** argv)
 	read_image_data(input_name); // reads and stores image information
 	printf("Done reading and going to write...\n");
 	
-	print_pixels(image_buffer); 
     write_image_data(file_type, output_name); // writes out stored header and image information to file 
-	printf("All finished!\n");
-	
-	//CHECK IF NUMBERS GREATER THAN MAX COLOR VALUE
-	
+	printf("Finished writing!\n");	
 	
 	return 0;
 	
 }
 
-// read_header function takes in a sole input_file_name argument in order to know which file to read from
+// read_header_data function takes in a sole input_file_name argument in order to know which file to read from
 void read_header_data(char* input_file_name)
 {
 	FILE *fp;
 	
 	fp = fopen(input_file_name, "r");
-	
-	printf("Input file name is: %s\n", input_file_name);
 	
 	// error checking again on input_file to validate its existence
 	if(fp == NULL)
@@ -313,9 +295,9 @@ void read_header_data(char* input_file_name)
 	memset(temp, 0, 64); // resets all values in temp to 0 for later use
 	
 	// error check to make sure max color fits within the correct color channel for this project
-	if(maxcolor < 0 || maxcolor > 255)
+	if(maxcolor != 255)
 		{
-			fprintf(stderr, "Error: Max color value is off\n");
+			fprintf(stderr, "Error: Image not an 8-bit channel (max color value is not 255)\n");
 		    exit(1); // exits out of program due to error	
 		}
 	
@@ -324,206 +306,155 @@ void read_header_data(char* input_file_name)
 	fclose(fp);
 }
 
+// read_image_data function takes in a sole input_file_name argument in order to know which file to read from
 void read_image_data(char* input_file_name)
 {
 	FILE *fp;
 	
 	fp = fopen(input_file_name, "r");
-	
-	printf("Input file name is: %s\n", input_file_name);
-	
+		
+	// error checking again on input_file to validate its existence
 	if(fp == NULL)
 	{
 		fprintf(stderr, "Error: File didn't open properly; filename may be incorrect or file may not exist.\n");
 		exit(1); // exits out of program due to error
 	}
-	
-	//char* current_line;
-	//current_line = (char *)malloc(1500);
-	//char temp[64] = {0};
-	//int c = fgetc(fp);
-	//int i = 0;
-	
-	//image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height));
-	
-	while(1)
-	{
-		//fseek(fp, current_location, SEEK_SET);
-		//printf("Current line is: %s\n", fgets(current_line, 1024, fp));
-		break; // POTENTIALLY READ UP TO NON-HEADER INFO and move to both P3 and P6 sections
-	}
-	
-	printf("The current file format is %s\n", header_buffer->file_format);
+		
+	// fseek points file pointer to space right after header information in the input file, so that the image_data buffer only reads in image data
 	fseek(fp, current_location, SEEK_SET);
 	
-	//TRY getc?
+	// strcmp to check for type of input file format
 	if(strcmp(header_buffer->file_format, "P3") == 0)
 	{
 		
-		char* current_line;
-	    current_line = (char *)malloc(1000);
-	    signed char temp[64] = {0};
-	    int c = fgetc(fp);
-	    int i = 0;
-		int j = 0;
-		//int struct_counter = 0;
-		int current_number = 0;
-		image_data current_pixel;
-		image_data* temp_ptr = image_buffer;
+		char* current_line; // character pointer used to read information from fgets
+		current_line = (char *)malloc(1500); // allocated memory to current_line; doesn't need too much since a single line in a .ppm file shouldn't be too long
+		char temp[64] = {0}; // temporary character array to store header information later on
+		int c = fgetc(fp); // initializes int c to the first character in the input file
+		int i = 0; // initializes iterator variable
+		int j = 0; // initializes iterator variable
+		int current_number = 0; // used hold the atoi value of the number read in
+		image_data current_pixel; // temp image_data struct which will hold RGB pixels
+		image_data* temp_ptr = image_buffer; // temp ptr to image_data struct which will be used to navigate through global buffer
 		current_pixel.r = '0';
-		current_pixel.g = '0';
+		current_pixel.g = '0'; // initializes current pixel RGB values to 0
 		current_pixel.b = '0';
-		int line = 0;
 		
-		
-		while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9')) // COPY OVER TO P6 SECTION (reads up to non-header data)
+		// while loop used to guarantee that there isn't any white space after header data
+		while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n' || !(c >= '0' && c <= '9')) 
 		{
 			if(c == '#')
 			{
-				fgets(current_line, 1024, fp);
-				c = fgetc(fp);
+				fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
+				c = fgetc(fp); // new character grabbed from file for next while evaluation
 			}
 			else
 			{
-				c = fgetc(fp);
+				c = fgetc(fp); // if there was whitespace and it wasn't a comment, then grab next character for loop evaluation
 			}
 		}
 		
+		// while loop which continually reads in pixels from the file
 		while(1)
 		{
-			if(c == '\n' || c == ' ' || feof(fp))
+			if(c == '\n' || c == ' ' || feof(fp)) // checks for white space or end of file to verify that pixel has been fully stored in temp
             {
-				printf("Found a white space\n");
-				printf("On line#%d\n", line++);
-				temp[i] = 0;
-				printf("Temp is now: %s\n", temp);
-				current_number = atoi(temp);
-			    //strcat(header_buffer->file_data, temp);	
-				//i++;
-				printf("Current i value is %d\n", i);
-				printf("Current j value is %d\n", j);
-				if(j == 0)
+				temp[i] = 0; // adds null-terminator to stored pixel
+				current_number = atoi(temp); // converts temp to integer for error checking
+				if(j == 0) // evaluates if current pixel is the "r" in "RGB"
 				{
-					current_pixel.r = atoi(temp);
-					//current_pixel.r = temp;
-					printf("Adding r pixel %d\n", current_pixel.r);
-					j++;
+					current_pixel.r = atoi(temp); // stores integer form of temp into current_pixel.r
+					j++; // increments j to indicate next pixel value should be "g"
 							
 				}
-				else if(j == 1)
+				else if(j == 1) // evaluates if current pixel is the "g" in "RGB"
 				{
-					current_pixel.g = atoi(temp);
-					//current_pixel.g = temp;
-					printf("Adding g pixel %d\n", current_pixel.g);
-					j++;
+					current_pixel.g = atoi(temp); // stores integer form of temp into current_pixel.g
+					j++; // increments j to indicate next pixel value should be "b"
 						
 				}
-				else if(j == 2)
+				else if(j == 2) // evaluates if current pixel is the "b" in "RGB"
 				{
-					current_pixel.b = atoi(temp);
-					//current_pixel.b = temp;
-					printf("Adding b pixel %d\n", current_pixel.b);
-					j = 0;
-					*temp_ptr = current_pixel;
-					temp_ptr++;
+					current_pixel.b = atoi(temp); // stores integer form of temp into current_pixel.b
+					j = 0; // resets j value to 0 to indicate new pixel set
+					*temp_ptr = current_pixel; // effectively stores current pixel in temporary buffer
+					temp_ptr++; // increments temp_ptr to point to next image_data struct in global buffer
 					current_pixel.r = '0';
-					current_pixel.g = '0';
+					current_pixel.g = '0'; // resets current pixel RGB values to 0
 					current_pixel.b = '0';
 				}
-				i = 0;
-			
-			
-				memset(temp, 0, 64);
+				i = 0; // resets iterator variable to 0
+				memset(temp, 0, 64); // resets all values in temp to 0 for later use
 				
-				printf("Current number is: %d\n", current_number);
 				
 				if(current_number < 0 || current_number > 255)
 				{
 					fprintf(stderr, "Error: Invalid color value in given file (RGB value not between 0-255).\n");
 					exit(1); // exits out of program due to error				
 				}
-				c = fgetc(fp);
-				
-				//printf("R pixel is:%c\nG pixel is:%c\nB pixel is:%c\n", current_pixel.r, current_pixel.g, current_pixel.b);
-				//printf("R pixel is:%c\nG pixel is:%c\nB pixel is:%c\n", (*image_buffer).r, (*image_buffer).g, (*image_buffer).b);
-				//print_pixel(current_pixel);
-				
+				c = fgetc(fp); // grabs the next character from the file						
 				
 			
 			}
-			if(feof(fp))
+			if(feof(fp)) // breaks out of loop after last number has been added
 			{
 				break;
 			}
-			//current_character = atoi(fgetc(fp));
-			//fgets(current_line, 1024, fp); // CHANGE THE MAX NUMBER
-			
-			printf("C is currently: %c\n", c);
-			temp[i++] = c;			
-			c = fgetc(fp);
+
+			temp[i++] = c; // stores non-white space character into temp chaacter array
+			c = fgetc(fp);	// stores next character in file in c	
 					
 		}
-		//printf("Final header_buffer is: %s\n", header_buffer->file_data);
-		//free(current_line);
 		fclose(fp);
 	}
 	
+	// strcmp to check for type of input file format
 	else if(strcmp(header_buffer->file_format, "P6") == 0)
 	{	
-		
-		char* current_line;
-	    current_line = (char *)malloc(1000);
-	    //signed char temp[64] = {0};
-	    int c = fgetc(fp);
-		//printf("C before init is %d or %s\n", c, c);
-	    int i = 0;
-		int j = 0;
-		//int struct_counter = 0;
-		int current_number = 0;
-		image_data current_pixel;
-		image_data* temp_ptr = image_buffer;
+		char* current_line; // character pointer used to read information from fgets
+		current_line = (char *)malloc(1500); // allocated memory to current_line; doesn't need too much since a single line in a .ppm file shouldn't be too long
+		char temp[64] = {0}; // temporary character array to store header information later on
+		int c = fgetc(fp); // initializes int c to the first character in the input file
+		int i = 0; // initializes iterator variable
+		int current_number = 0; // used hold the atoi value of the number read in
+		image_data current_pixel; // temp image_data struct which will hold RGB pixels
+		image_data* temp_ptr = image_buffer; // temp ptr to image_data struct which will be used to navigate through global buffer
 		current_pixel.r = '0';
-		current_pixel.g = '0';
+		current_pixel.g = '0'; // initializes current pixel RGB values to 0
 		current_pixel.b = '0';
-		int line = 0;
-		int test_counter = 0;
 		
-		
-		printf("C before anything else 1 is: %d or %c and size is: %d\n", c, c, sizeof(c));
-		while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n') // COPY OVER TO P6 SECTION (reads up to non-header data)
+	
+		// while loop used to guarantee that there isn't any white space after header data
+		while(c == '#' || c == ' ' || c == '\t' || c == '\r' || c == '\n') 
 		{
-			printf("Loop evaluated\n");
 			if(c == '#')
 			{
-				fgets(current_line, 1024, fp);
+				
+				fgets(current_line, 1024, fp); // immediately reads to end of line if a comment is found
 				current_location = ftell(fp); // since P6 doesn't use fgetc after initial whitespace removal verification, current_location needs to be stored before fget(c) to avoid missing the first number of the file
-				c = fgetc(fp);
+				c = fgetc(fp); // new character grabbed from file for next while evaluation
 			}
 			else
 			{
 				current_location = ftell(fp); // same logic as above comment
-				c = fgetc(fp);
+				c = fgetc(fp); // if there was whitespace and it wasn't a comment, then grab next character for loop evaluation
 			}
 		}
 
 				
+		fclose(fp); // after using fgetc to verify white space after header is gone, closes file
+		fopen(input_file_name, "rb"); // reopens file to be able to read in bytes
+		fseek(fp, current_location, SEEK_SET); // sets file pointer to previously calculated current_location global variable
 		
-		fclose(fp);
-		fopen(input_file_name, "rb");
-		fseek(fp, current_location, SEEK_SET);
 		
-		
-		//for(i = 0; i < atoi(header_buffer->file_width) * atoi(header_buffer->file_height); i++)
-		//while(!feof(fp))
+		// while loop which iterates for every pixel in the file using width * height
 		while(i < atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
 		{
-			fread(&current_pixel.r, sizeof(unsigned char), 1, fp); //<-- Note inner for(j... has been removed
-			fread(&current_pixel.g, sizeof(unsigned char), 1, fp);
-			fread(&current_pixel.b, sizeof(unsigned char), 1, fp);	
-			printf("On lines#%d\n", line+=3);
-			printf("Red is: %d and Blue is %d and Green is: %d\n", current_pixel.r, current_pixel.b, current_pixel.g);
-			*temp_ptr = current_pixel;
-			temp_ptr++;
+			fread(&current_pixel.r, sizeof(unsigned char), 1, fp); // reads a byte "unsigned char" pixel into current_pixel.r field
+			fread(&current_pixel.g, sizeof(unsigned char), 1, fp); // reads a byte "unsigned char" pixel into current_pixel.g field
+			fread(&current_pixel.b, sizeof(unsigned char), 1, fp); // reads a byte "unsigned char" pixel into current_pixel.b field
+			*temp_ptr = current_pixel; // effectively stores current pixel in temporary buffer
+			temp_ptr++; // increments temp_ptr to point to next image_data struct in global buffer
 			
 			// error checking block for each individual pixel to make sure they're not outside the color range limit
 			if(current_pixel.r < 0 || current_pixel.r  > atoi(header_buffer->file_maxcolor))
@@ -545,17 +476,15 @@ void read_image_data(char* input_file_name)
 			}
 			
 			current_pixel.r = '0';
-			current_pixel.g = '0';
+			current_pixel.g = '0'; // resets current pixel RGB values to 0
 			current_pixel.b = '0';
-			i++;
+			i++; // increments iterator variable
 		}
 		
-
-		//printf("Final header_buffer is: %s\n", header_buffer->file_data);		
-		//free(current_line);
 		fclose(fp);
 	}
 	
+	// file format was neither P3 nor P6 so exits with error
 	else
 	{
 		fprintf(stderr, "Error: File format to read in not recognized\n");
@@ -563,18 +492,15 @@ void read_image_data(char* input_file_name)
 	}
 }
 
+// write_image_data function takes in file_format to verify file output as well as the output_file_name to know where to open the file
 void write_image_data(char* file_format, char* output_file_name)
 {
-	*(header_buffer->file_format + 1) = *(file_format + 1); // rewrites # in P# to match correct destination file format before writing out
-	printf("Getting to start\n");
+	*(header_buffer->file_format + 1) = *(file_format); // rewrites # in P# to match correct destination file format before writing out
 	FILE *fp;
 	
-	//printf("Output file name is: %s\n", output_file_name);
-	fp = fopen(output_file_name, "a"); // error checking around creating new file?
+	fp = fopen(output_file_name, "a"); // opens file to be appended to (file will be created if one does not exist)
 	
-	//printf("Output file name is: %s\n", output_file_name);
-	
-	if(fp == NULL) // CHANGE this?
+	if(fp == NULL) 
 	{
 		fprintf(stderr, "Error: File couldn't be created/modified.\n");
 		exit(1); // exits out of program due to error
@@ -582,9 +508,8 @@ void write_image_data(char* file_format, char* output_file_name)
 	
 	char* current_line;
 	
-	
-	printf("The current file format is %s\n", header_buffer->file_format);
-	fprintf(fp, header_buffer->file_format); // need to write null-terminator?
+	// block of code which writes header information into the output file along with whitespaces accordingly
+	fprintf(fp, header_buffer->file_format); 
 	fprintf(fp, "\n");
 	fprintf(fp, header_buffer->file_width);
 	fprintf(fp, " ");
@@ -592,116 +517,68 @@ void write_image_data(char* file_format, char* output_file_name)
 	fprintf(fp, "\n");
 	fprintf(fp, header_buffer->file_maxcolor);
 	fprintf(fp, "\n");
-	//current_location = ftell(fp);
-	//printf("New current location is: %d\n", current_location);
 	
-	
-	if(strcmp(file_format, "P3") == 0)
+	// strcmp to check for type of input file format
+	if(strcmp(header_buffer->file_format, "P3") == 0)
 	{		
-		int i = 0;
-		int j = 0;
-		unsigned char temp[64] = {0};
-		char temp_string[64];
-		image_data current_pixel;
-		image_data* temp_ptr = image_buffer;
+		int i = 0; // initializes iterator variable
+		unsigned char temp[64] = {0}; // creates temp array of unsigned char
+		char temp_string[64]; // creates temp_string to hold converted value from file as a string
+		image_data* temp_ptr = image_buffer; // temp ptr to image_data struct which will be used to navigate through stored pixels in the global buffer
 		
-		printf("Writing P3 data\n");
-		while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
+		// while loop which iterates for every pixel in the file using width * height
+		while(i < atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
 	    {
-			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
-			sprintf(temp_string, "%d", (*temp_ptr).r);
-			fprintf(fp, temp_string);
-			memset(temp_string, 0, 64);
-			fprintf(fp, "\n");
+			sprintf(temp_string, "%d", (*temp_ptr).r); // converts read-in pixel "r" value to a string
+			fprintf(fp, temp_string); // writes converted pixel as a string to the file
+			memset(temp_string, 0, 64); // resets all values in temp to 0 for reuse
+			fprintf(fp, "\n"); // prints a newline to act as "whitespace" between pixel information
 			
-			sprintf(temp_string, "%d", (*temp_ptr).g);
-			fprintf(fp, temp_string);
-			memset(temp_string, 0, 64);
-			fprintf(fp, "\n");
+			sprintf(temp_string, "%d", (*temp_ptr).g); // converts read-in pixel "g" value to a string
+			fprintf(fp, temp_string); // writes converted pixel as a string to the file
+			memset(temp_string, 0, 64); // resets all values in temp to 0 for reuse
+			fprintf(fp, "\n"); // prints a newline to act as "whitespace" between pixel information
 			
-			sprintf(temp_string, "%d", (*temp_ptr).b);			
-			fprintf(fp, temp_string);
-			memset(temp_string, 0, 64);
-			fprintf(fp, "\n");
+			sprintf(temp_string, "%d", (*temp_ptr).b); // converts read-in pixel "b" value to a string	
+			fprintf(fp, temp_string); // writes converted pixel as a string to the file
+			memset(temp_string, 0, 64); // resets all values in temp to 0 for reuse
+			fprintf(fp, "\n"); // prints a newline to act as "whitespace" between pixel information
 				
-			temp_ptr++;
-			i++;
+			temp_ptr++; // increments temp_ptr to point to next image_data struct in global buffer
+			i++;  // increments iterator variable
 		}
-        //fprintf(fp, header_buffer->file_data);
 
 		fclose(fp);
     }
 	
-	else if(strcmp(file_format, "P6") == 0)
+	// strcmp to check for type of input file format
+	else if(strcmp(header_buffer->file_format, "P6") == 0)
 	{
-		fclose(fp);
-		fopen(output_file_name, "ab");
-		//printf("Current location is still %d\n", current_location);
-		//fseek(fp, current_location, SEEK_SET);
-		int i = 0;
-		char temp_string[64];
-		image_data current_pixel;
-		image_data* temp_ptr = image_buffer;
+		fclose(fp); // closes file after writing header information since P6 requires writing bytes
+		fopen(output_file_name, "ab"); // opens file to be appended to in byte mode
+		int i = 0; // initializes iterator variable
+		image_data* temp_ptr = image_buffer; // temp ptr to image_data struct which will be used to navigate through stored pixels in the global buffer
 		
-		printf("Writing P6 data\n");
+		// while loop which iterates for every pixel in the file using width * height
 		while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
 	    {
-			/*
-			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
-			sprintf(temp_string, "%d", (*temp_ptr).r);			
-			fwrite(temp_string, 1, sizeof(temp_string), fp);
-			memset(temp_string, 0, 64);
-			strcpy(temp_string, " ");
-			fwrite(temp_string, 1, sizeof(temp_string), fp);
-			memset(temp_string, 0, 64);
-			
-			sprintf(temp_string, "%d", (*temp_ptr).g);
-			fprintf(fp, temp_string);
-			fwrite(temp_string, 1, sizeof(temp_string), fp);
-			memset(temp_string, 0, 64);
-			strcpy(temp_string, " ");
-			fwrite(temp_string, 1, sizeof(temp_string), fp);
-			memset(temp_string, 0, 64);
-			
-			sprintf(temp_string, "%d", (*temp_ptr).b);	
-			fwrite(temp_string, 1, sizeof(temp_string), fp);			
-			fprintf(fp, temp_string);
-			memset(temp_string, 0, 64);
-			strcpy(temp_string, " ");
-			fwrite(temp_string, 1, sizeof(temp_string), fp);
-			memset(temp_string, 0, 64);*/
-			printf("Writing Pixels to file currently with pixels %d %d %d\n", (*temp_ptr).r, (*temp_ptr).g, (*temp_ptr).b);
-			fwrite(&(*temp_ptr).r, sizeof(unsigned char), 1, fp);
-			fwrite(&(*temp_ptr).g, sizeof(unsigned char), 1, fp);
-			fwrite(&(*temp_ptr).b, sizeof(unsigned char), 1, fp);
+			fwrite(&(*temp_ptr).r, sizeof(unsigned char), 1, fp); // writes the current pixels "r" value of an "unsigned char" byte to the file
+			fwrite(&(*temp_ptr).g, sizeof(unsigned char), 1, fp); // writes the current pixels "g" value of an "unsigned char" byte to the file
+			fwrite(&(*temp_ptr).b, sizeof(unsigned char), 1, fp); // writes the current pixels "b" value of an "unsigned char" byte to the file
 				
-			temp_ptr++;
-			i++;
+			temp_ptr++; // increments temp_ptr to point to next image_data struct in global buffer
+			i++;  // increments iterator variable
 		}
-		//fwrite(header_buffer->file_data, sizeof(unsigned char), strlen(header_buffer->file_data), fp); // CHANGE THE MAX NUMBER HERE
 		
 		fclose(fp);
 	}
 	
+	// extra error checking in case file format given was invalid, but should have been caught earlier
 	else
 	{
 		fprintf(stderr, "Error: File format to write out not recognized\n");
+		fclose(fp); // closes file before exiting out
 		exit(1); // exits out of program due to error	
 	}
-	//close file?
 }
 
-void print_pixels(image_data* pixels)
-{
-	int i = 0;
-	printf("Width is: %d\nHeight is: %d\n", atoi(header_buffer->file_width), atoi(header_buffer->file_height));
-	while(i != atoi(header_buffer->file_width) * atoi(header_buffer->file_height))
-	{
-		char temp_str[64];
-		sprintf(temp_str, "%d", (*pixels).r);
-		printf("Printing pixel #%d...\n", i++); 
-		printf("R pixel is:%d\nG pixel is:%d\nB pixel is:%d\n", (*pixels).r, (*pixels).g, (*pixels).b);
-		printf("Printing R pixel as string: %s\n", temp_str);;
-		pixels++;
-	}
-}

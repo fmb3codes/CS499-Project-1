@@ -1,5 +1,5 @@
 //
-//  FBerry_CS430_Project1.c
+//  ppmrw.c
 //  CS430 Project 1
 //
 //  Frankie Berry
@@ -43,8 +43,6 @@ void write_image_data(char* file_format, char* output_file_name); // function me
 
 int main(int argc, char** argv)
 {
-	
-	printf("argc is: %d\n", argc);
 	if(argc != 4) // checks for 4 arguments which includes the argv[0] path argument as well as the 3 required arguments of format [P# input.ppm output.ppm]
 	{
 		fprintf(stderr, "Error: Incorrect number of arguments; format should be -> [# input.ppm output.ppm]\n");
@@ -99,7 +97,7 @@ int main(int argc, char** argv)
 	
 	// block of code allocating memory to global header_buffer before its use
 	header_buffer = (struct header_data*)malloc(sizeof(struct header_data)); 
-	header_buffer->file_format = (char *)malloc(3);
+	header_buffer->file_format = (char *)malloc(100);
 	header_buffer->file_comment = (char *)malloc(1024);
 	header_buffer->file_height = (char *)malloc(100);
 	header_buffer->file_width = (char *)malloc(100);
@@ -113,10 +111,9 @@ int main(int argc, char** argv)
 	image_buffer = (image_data *)malloc(sizeof(image_data) * atoi(header_buffer->file_width) * atoi(header_buffer->file_height)  + 1); // + 1
 	
 	read_image_data(input_name); // reads and stores image information
-	printf("Done reading and going to write...\n");
 	
     write_image_data(file_type, output_name); // writes out stored header and image information to file 
-	printf("Finished writing!\n");	
+	printf("Success! Finished writing!\n");	
 	
 	return 0;
 	
